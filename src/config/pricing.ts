@@ -12,7 +12,7 @@ export interface PricingPackage {
 
 export const pricingTable: Record<number, PricingPackage> = {
   10: {
-    productId: 'prod_TJrIjoHwTKwg9c',
+    productId: 'prod_TO1NsHrmXfJJzZ',
     price: 0.5
   },
   50: {
@@ -20,15 +20,15 @@ export const pricingTable: Record<number, PricingPackage> = {
     price: 1
   },
   500: {
-    productId: 'prod_TJrJT9hFwWozod',
+    productId: 'prod_TO1ONHgzSs53ZN',
     price: 2
   },
   1000: {
-    productId: 'prod_TJrKh3jSiA5EQ5',
+    productId: 'prod_TO1OM2V3SgrILk',
     price: 3
   },
   5000: {
-    productId: 'prod_TJrLUfvqFCZx8l',
+    productId: 'prod_TO1NZJ9gUDsymC',
     price: 10
   }
 }

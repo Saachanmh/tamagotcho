@@ -3,6 +3,7 @@ import { PixelMonster } from '@/components/monsters'
 import { MonsterStateBadge, isMonsterState } from './monster-state-badge'
 import type { MonsterState } from '@/types/monster'
 import { parseMonsterTraits, formatAdoptionDate } from '@/lib/utils'
+import {equipAccessory} from "@/services/shop";
 
 /**
  * Props pour le composant MonsterCard
