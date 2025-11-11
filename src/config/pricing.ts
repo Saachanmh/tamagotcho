@@ -16,7 +16,7 @@ export const pricingTable: Record<number, PricingPackage> = {
     price: 0.5
   },
   50: {
-    productId: 'prod_TJrJHiNKtOkEXR',
+    productId: 'prod_TNKdydMrtMjUTi',
     price: 1
   },
   500: {
