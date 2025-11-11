@@ -1,90 +1,68 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import InputField from '../input'
-import Button from '../button'
+import React, { useEffect } from 'react'
+import Button from '@/components/button'
 import { authClient } from '@/lib/auth-client'
 
-interface Credentials {
-  email: string
-  password: string
+export default function SignInForm (): React.ReactNode {
+    useEffect(() => {
+        // Vérifier dans la console si le composant est bien monté
+        console.log('SignInForm mounted')
+    }, [])
+
+    const handleGitHubLogin = async (): Promise<void> => {
+        await authClient.signIn.social({
+            provider: 'github',
+            callbackURL: process.env.NEXT_PUBLIC_APP_URL ?? '/'
+        })
+    }
+
+    const handleEmailLogin = async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
+        e.preventDefault()
+        const form = new FormData(e.currentTarget)
+        await authClient.signIn.email({
+            email: form.get('email') as string,
+            password: form.get('password') as string,
+            callbackURL: process.env.NEXT_PUBLIC_APP_URL ?? '/'
+        })
+    }
+
+    return (
+        <div className="flex flex-col gap-4 max-w-md mx-auto p-6">
+            <Button variant="outline" size="lg" onClick={handleGitHubLogin}>
+                Se connecter avec GitHub
+            </Button>
+
+            <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                    <span className="w-full border-t" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-white px-2 text-gray-500">Ou</span>
+                </div>
+            </div>
+
+            <form onSubmit={handleEmailLogin} className="flex flex-col gap-3">
+                <input
+                    data-testid="signin-email"
+                    type="email"
+                    name="email"
+                    placeholder="Email"
+                    required
+                    className="px-4 py-2 border border-gray-300 rounded bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-lochinvar-300"
+                />
+                <input
+                    data-testid="signin-password"
+                    type="password"
+                    name="password"
+                    placeholder="Mot de passe"
+                    required
+                    className="px-4 py-2 border border-gray-300 rounded bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-lochinvar-300"
+                />
+                <Button type="submit" variant="primary" size="lg">
+                    Se connecter
+                </Button>
+            </form>
+        </div>
+    )
 }
-
-function SignInForm ({ onError }: { onError: (error: string) => void }): React.ReactNode {
-  const router = useRouter()
-  const [credentials, setCredentials] = useState<Credentials>({
-    email: '',
-    password: ''
-  })
-  const [isLoading, setIsLoading] = useState<boolean>(false)
-
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>): void => {
-    e.preventDefault()
-    setIsLoading(true)
-    onError('') // Clear previous errors
-
-    void authClient.signIn.email({
-      email: credentials.email,
-      password: credentials.password,
-      callbackURL: '/app'
-    }, {
-      onRequest: (ctx) => {
-        console.log('Signing in...', ctx)
-      },
-      onSuccess: (ctx) => {
-        console.log('User signed in:', ctx)
-        setIsLoading(false)
-
-        // Redirection explicite vers l'application
-        router.push('/app')
-        router.refresh() // Rafraîchir pour charger la session
-      },
-      onError: (ctx) => {
-        console.error('Sign in error:', ctx)
-        setIsLoading(false)
-        onError(ctx.error.message)
-      }
-    })
-  }
-
-  return (
-    <div className='space-y-6'>
-      <div className='text-center'>
-        <h2 className='text-2xl font-bold text-gray-800 mb-2'>
-          🔐 Connexion
-        </h2>
-        <p className='text-gray-600 text-sm'>
-          Retrouvez vos petits compagnons ! 👾
-        </p>
-      </div>
-
-      <form className='flex flex-col justify-center space-y-4' onSubmit={handleSubmit}>
-        <InputField
-          label='Email'
-          type='email'
-          name='email'
-          value={credentials.email}
-          onChangeText={(text: string) => setCredentials({ ...credentials, email: text })}
-        />
-        <InputField
-          label='Mot de passe'
-          type='password'
-          name='password'
-          value={credentials.password}
-          onChangeText={(text: string) => setCredentials({ ...credentials, password: text })}
-        />
-        <Button
-          type='submit'
-          size='lg'
-          disabled={isLoading}
-          variant='primary'
-        >
-          {isLoading ? '🔄 Connexion...' : '🎮 Se connecter'}
-        </Button>
-      </form>
-    </div>
-  )
-}
-
-export default SignInForm

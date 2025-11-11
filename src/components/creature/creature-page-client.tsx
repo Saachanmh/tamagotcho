@@ -9,6 +9,8 @@ import { CreatureStatsPanel } from './creature-stats-panel'
 import { LevelUpAnimation } from './level-up-animation'
 import { ShopModal } from './shop-modal'
 import { useRouter } from 'next/navigation'
+import { SHOP_CATALOG } from '@/services/shop'
+import { toast } from 'react-toastify'
 
 /**
  * Props pour le composant CreaturePageClient
@@ -131,6 +133,32 @@ export function CreaturePageClient ({ monster }: CreaturePageClientProps): React
     actionTimerRef.current = timer
   }
 
+  /**
+   * Gère l'achat d'un accessoire depuis la boutique
+   * @param {string} creatureId - ID de la créature
+   * @param {string} itemId - ID de l'accessoire à acheter
+   */
+  const handleBuyItem = async (creatureId: string, itemId: string): Promise<void> => {
+    try {
+      console.log(`Achat de l'accessoire ${itemId} pour la créature ${creatureId}`)
+
+      // TODO: Implémenter l'appel API pour acheter l'accessoire
+      // await buyAccessory(creatureId, itemId)
+
+      toast.success('Accessoire acheté avec succès ! 🎉', {
+        position: 'top-center',
+        autoClose: 3000
+      })
+    } catch (error) {
+      console.error('Erreur lors de l\'achat de l\'accessoire:', error)
+      const errorMessage = error instanceof Error ? error.message : 'Erreur lors de l\'achat 😢'
+      toast.error(errorMessage, {
+        position: 'top-center',
+        autoClose: 5000
+      })
+    }
+  }
+
   return (
     <div className='min-h-screen bg-gradient-to-br from-yellow-100 via-pink-100 to-purple-200 py-6 relative overflow-hidden'>
       {/* Bulles décoratives animées */}
@@ -220,6 +248,9 @@ export function CreaturePageClient ({ monster }: CreaturePageClientProps): React
           onClose={() => { setShowShop(false) }}
           creatureName={currentMonster.name}
           creatureId={currentMonster._id}
+          open={showShop}
+          items={SHOP_CATALOG}
+          onBuyItem={handleBuyItem}
         />
       )}
 
