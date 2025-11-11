@@ -60,7 +60,22 @@ export function ShopModal ({
             toast.success('Boost d\'XP acheté avec succès ! 🎉', { position: 'top-center', autoClose: 3000 })
             setTimeout(() => { onClose() }, 500)
         } catch (error) {
-            const errorMessage = error instanceof Error ? error.message : 'Erreur lors de l\'achat du boost 😢'
+            let errorMessage = 'Erreur lors de l\'achat du boost 😢'
+
+            if (error instanceof Error) {
+                if (error.message.includes('Insufficient balance')) {
+                    errorMessage = '💰 Solde insuffisant ! Vous n\'avez pas assez de Koins pour acheter ce boost.'
+                } else if (error.message.includes('not authenticated')) {
+                    errorMessage = '🔒 Vous devez être connecté pour acheter des boosts.'
+                } else if (error.message.includes('Monster not found')) {
+                    errorMessage = '👾 Monstre introuvable.'
+                } else if (error.message.includes('Boost not found')) {
+                    errorMessage = '⚡ Boost introuvable dans le catalogue.'
+                } else {
+                    errorMessage = error.message
+                }
+            }
+
             toast.error(errorMessage, { position: 'top-center', autoClose: 5000 })
         } finally {
             setIsPurchasing(false)

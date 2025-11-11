@@ -142,8 +142,18 @@ export function CreaturePageClient ({ monster }: CreaturePageClientProps): React
     try {
       console.log(`Achat de l'accessoire ${itemId} pour la créature ${creatureId}`)
 
-      // TODO: Implémenter l'appel API pour acheter l'accessoire
-      // await buyAccessory(creatureId, itemId)
+      // Import dynamique pour éviter les problèmes de server actions
+      const { buyAccessory: buyAccessoryAction } = await import('@/actions/shop.actions')
+      const { buyAccessory: buyAccessoryClient } = await import('@/services/shop')
+
+      // 1. Débit des Koins via l'action serveur (lance une erreur si solde insuffisant)
+      await buyAccessoryAction(creatureId, itemId)
+
+      // 2. Mise à jour du state côté client (localStorage)
+      const item = SHOP_CATALOG.find((i) => i.id === itemId)
+      if (item) {
+        await buyAccessoryClient(item)
+      }
 
       toast.success('Accessoire acheté avec succès ! 🎉', {
         position: 'top-center',
@@ -151,7 +161,24 @@ export function CreaturePageClient ({ monster }: CreaturePageClientProps): React
       })
     } catch (error) {
       console.error('Erreur lors de l\'achat de l\'accessoire:', error)
-      const errorMessage = error instanceof Error ? error.message : 'Erreur lors de l\'achat 😢'
+
+      // Messages d'erreur personnalisés selon le type d'erreur
+      let errorMessage = 'Erreur lors de l\'achat 😢'
+
+      if (error instanceof Error) {
+        if (error.message.includes('Insufficient balance')) {
+          errorMessage = '💰 Solde insuffisant ! Vous n\'avez pas assez de Koins pour acheter cet accessoire.'
+        } else if (error.message.includes('not authenticated')) {
+          errorMessage = '🔒 Vous devez être connecté pour acheter des accessoires.'
+        } else if (error.message.includes('Monster not found')) {
+          errorMessage = '👾 Monstre introuvable.'
+        } else if (error.message.includes('Item not found')) {
+          errorMessage = '🛍️ Accessoire introuvable dans le catalogue.'
+        } else {
+          errorMessage = error.message
+        }
+      }
+
       toast.error(errorMessage, {
         position: 'top-center',
         autoClose: 5000
