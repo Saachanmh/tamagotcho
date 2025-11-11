@@ -2,13 +2,15 @@
 
 import { createAuthClient } from 'better-auth/react'
 
-// Utiliser l'URL absolue (window.location.origin) pour éviter l'erreur "Invalid base URL"
-const baseURL = typeof window !== 'undefined'
-    ? `${window.location.origin}/api/auth`
-    : '/api/auth'
+const getBaseURL = (): string => {
+    if (typeof window !== 'undefined') {
+        return window.location.origin
+    }
+    return process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
+}
 
 export const authClient = createAuthClient({
-    baseURL
+    baseURL: getBaseURL()
 })
 
 export const { useSession, signIn, signOut } = authClient
