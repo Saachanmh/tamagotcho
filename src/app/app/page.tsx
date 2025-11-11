@@ -1,39 +1,70 @@
-import { getMonsters } from '@/actions/monsters.actions'
+// src/app/app/page.tsx
+'use client'
+
+import { useEffect, useState } from 'react'
 import DashboardContent from '@/components/dashboard/dashboard-content'
-import { auth } from '@/lib/auth'
-import { headers } from 'next/headers'
+import { getMonsters } from '@/actions/monsters.actions'
+import { useSession } from '@/lib/auth-client'
 
-/**
- * Page principale de l'application (Dashboard utilisateur)
- *
- * Cette page server-side récupère la session et les monstres de l'utilisateur.
- * La protection de la route est gérée par le layout parent (src/app/app/layout.tsx).
- *
- * @async
- * @returns {Promise<React.ReactNode>} Le contenu du dashboard
- *
- * @example
- * // Accès direct à la route
- * // GET /app
- */
-async function AppPage (): Promise<React.ReactNode> {
-  // Récupération de la session utilisateur via Better Auth
-  // La session est garantie d'exister car le layout parent vérifie l'authentification
-  const session = await auth.api.getSession({
-    headers: await headers()
-  })
+function AppPage (): React.ReactNode {
+    const { data: session, isPending } = useSession()
+    const [monsters, setMonsters] = useState<Awaited<ReturnType<typeof getMonsters>>>([])
+    const [isLoading, setIsLoading] = useState(true)
 
-  // Récupération de tous les monstres appartenant à l'utilisateur connecté
-  const monsters = await getMonsters()
+    useEffect(() => {
+        void verifyStripePayment()
+    }, [])
 
-  // TypeScript safety: session est vérifié dans le layout parent
-  if (session === null || session === undefined) {
-    throw new Error('Session should exist at this point')
-  }
+    async function verifyStripePayment (): Promise<void> {
+        const params = new URLSearchParams(window.location.search)
+        const sessionId = params.get('session_id')
+        if (sessionId == null) return
 
-  return (
-    <DashboardContent session={session} monsters={monsters} />
-  )
+        try {
+            const res = await fetch('/api/verify-payment', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ sessionId })
+            })
+            const data = await res.json()
+            if (data.success === true) {
+                window.history.replaceState({}, '', '/app')
+                window.location.reload()
+            }
+        } catch (err) {
+            console.error('Échec vérification paiement:', err)
+        }
+    }
+
+    useEffect(() => {
+        if (session?.user === undefined) return
+        void loadMonsters()
+    }, [session])
+
+    async function loadMonsters (): Promise<void> {
+        try {
+            const userMonsters = await getMonsters()
+            setMonsters(userMonsters)
+        } catch (error) {
+            console.error('Chargement monstres échoué:', error)
+        } finally {
+            setIsLoading(false)
+        }
+    }
+
+    if (isPending === true || isLoading) {
+        return (
+            <div className="flex items-center justify-center min-h-screen">
+                <p className="text-moccaccino-500">Chargement...</p>
+            </div>
+        )
+    }
+
+    if (session == null) {
+        throw new Error('Session absente')
+    }
+
+    return <DashboardContent session={session} monsters={monsters} />
 }
 
 export default AppPage
