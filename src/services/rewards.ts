@@ -1,4 +1,4 @@
-giimport { REWARD_AMOUNTS } from '@/config/rewards'
+import { REWARD_AMOUNTS } from '@/config/rewards'
 
 export type MonsterActionType = keyof typeof REWARD_AMOUNTS
 
