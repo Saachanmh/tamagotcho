@@ -1,9 +1,13 @@
+'use client'
+
 import Link from 'next/link'
 import { PixelMonster } from '@/components/monsters'
 import { MonsterStateBadge, isMonsterState } from './monster-state-badge'
 import type { MonsterState } from '@/types/monster'
 import { parseMonsterTraits, formatAdoptionDate } from '@/lib/utils'
-import {equipAccessory} from "@/services/shop";
+import { subscribeShop } from '@/services/shop'
+import { useEffect, useState } from 'react'
+import type { BackgroundItem } from '@/services/shop'
 
 /**
  * Props pour le composant MonsterCard
@@ -54,6 +58,16 @@ export function MonsterCard ({
   const adoptionDate = formatAdoptionDate(String(createdAt) ?? String(updatedAt))
   const levelLabel = level ?? 1
 
+  // État pour le background équipé
+  const [equippedBg, setEquippedBg] = useState<BackgroundItem | null>(null)
+
+  // Charger le background équipé
+  useEffect(() => {
+    return subscribeShop((state: any) => {
+      setEquippedBg(state?.background ?? null)
+    })
+  }, [])
+
   return (
     <Link href={`/app/creatures/${id}`}>
       <article
@@ -81,7 +95,15 @@ export function MonsterCard ({
         <div className='relative flex flex-col gap-6'>
           {/* Zone de rendu du monstre - PLUS GRANDE */}
           <div className='relative flex items-center justify-center overflow-hidden rounded-3xl bg-white/80 p-8 ring-4 ring-white/90 shadow-inner backdrop-blur-sm group-hover:bg-white/90 transition-all duration-300 min-h-[280px]'>
-            {/* Effet de fond pulsant */}
+            {/* Background image si équipé */}
+            {equippedBg != null && (
+              <div
+                className='absolute inset-0 bg-cover bg-center opacity-30 group-hover:opacity-40 transition-opacity duration-300'
+                style={{ backgroundImage: `url(${equippedBg.imageUrl})` }}
+              />
+            )}
+
+            {/* Effet de fond pulsant (au-dessus du background mais sous le monstre) */}
             <div className='absolute inset-0 bg-gradient-to-br from-yellow-100/50 via-pink-100/50 to-purple-100/50 animate-pulse-slow' />
 
             {traits !== null && (
@@ -156,6 +178,7 @@ export function MonsterCard ({
       </article>
 
       {/* Styles pour les animations */}
+      {/* Note: Les classes animate-* ci-dessous sont utilisées dans le JSX ci-dessus */}
       <style jsx>{`
         @keyframes shine {
           0% {

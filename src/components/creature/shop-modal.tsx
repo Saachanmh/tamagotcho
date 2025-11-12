@@ -7,43 +7,51 @@ import { toast } from 'react-toastify'
 import { xpBoosts } from '@/config/shop.config'
 import { XPBoostCard } from './xp-boost-card'
 import { buyXpBoost } from '@/actions/shop.actions'
-
-interface ShopItem {
-    id: string
-    name: string
-    description?: string
-    price: number
-    type?: string
-}
+import {
+    getCatalogWithOwnership,
+    getBackgroundCatalogWithOwnership,
+    buyAccessory,
+    buyBackground,
+    type ShopItem as AccessoryShopItem,
+    type BackgroundItem
+} from '@/services/shop'
 
 interface ShopModalProps {
     onClose: () => void
     creatureName: string
     creatureId: string
     open?: boolean
-    items?: ShopItem[]
-    onBuyItem?: (creatureId: string, itemId: string) => Promise<void>
 }
 
 export function ShopModal ({
                                onClose,
                                creatureName,
                                creatureId,
-                               open = true,
-                               items = [],
-                               onBuyItem
+                               open = true
 }: ShopModalProps): React.ReactElement | null {
   const [isPurchasing, setIsPurchasing] = useState(false)
+  const [accessories, setAccessories] = useState<AccessoryShopItem[]>([])
+  const [backgrounds, setBackgrounds] = useState<BackgroundItem[]>([])
+  const [selectedCategory, setSelectedCategory] = useState<'xp' | 'accessories' | 'backgrounds'>('xp')
 
   if (!open) return null
 
-  // Debug: vérifier que les items sont bien passés
+  // Charger les accessoires et backgrounds disponibles
   useEffect(() => {
-    console.log('🛍️ ShopModal - Items reçus:', items.length, 'accessoires')
-    if (items.length > 0) {
-      console.log('Premier item:', items[0])
+    const loadShopItems = () => {
+      const accessoryCatalog = getCatalogWithOwnership()
+      const backgroundCatalog = getBackgroundCatalogWithOwnership()
+
+      // Filtrer pour ne montrer que les items non possédés
+      const availableAccessories = accessoryCatalog.filter(item => !item.owned)
+      const availableBackgrounds = backgroundCatalog.filter(item => !item.owned)
+
+      setAccessories(availableAccessories)
+      setBackgrounds(availableBackgrounds)
     }
-  }, [items])
+
+    loadShopItems()
+  }, [open])
 
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent): void => {
@@ -82,19 +90,44 @@ export function ShopModal ({
         }
     }
 
-    const handleItemPurchase = async (itemId: string): Promise<void> => {
+    const handleAccessoryPurchase = async (item: AccessoryShopItem): Promise<void> => {
         setIsPurchasing(true)
         try {
-            if (typeof onBuyItem === 'function') {
-                await onBuyItem(creatureId, itemId)
-                toast.success('Objet acheté avec succès ! 🎉', { position: 'top-center', autoClose: 3000 })
-                setTimeout(() => { onClose() }, 500)
+            // TODO: Intégrer avec le système de wallet pour déduire les koins
+            const result = await buyAccessory(item)
+            if (result.ok) {
+                toast.success(`${item.name} acheté avec succès ! 🎉`, { position: 'top-center', autoClose: 3000 })
+                // Recharger le catalogue
+                const accessoryCatalog = getCatalogWithOwnership()
+                const availableAccessories = accessoryCatalog.filter(i => !i.owned)
+                setAccessories(availableAccessories)
             } else {
-                toast.error('Achat non implémenté pour cet objet. Connectez `onBuyItem`.', { position: 'top-center', autoClose: 5000 })
-                console.warn('ShopModal: onBuyItem not provided, cannot complete purchase for', itemId)
+                toast.error(result.error ?? 'Erreur lors de l\'achat', { position: 'top-center', autoClose: 3000 })
             }
         } catch (error) {
-            const errorMessage = error instanceof Error ? error.message : 'Erreur lors de l\'achat de l\'objet 😢'
+            const errorMessage = error instanceof Error ? error.message : 'Erreur lors de l\'achat 😢'
+            toast.error(errorMessage, { position: 'top-center', autoClose: 5000 })
+        } finally {
+            setIsPurchasing(false)
+        }
+    }
+
+    const handleBackgroundPurchase = async (item: BackgroundItem): Promise<void> => {
+        setIsPurchasing(true)
+        try {
+            // TODO: Intégrer avec le système de wallet pour déduire les koins
+            const result = await buyBackground(item)
+            if (result.ok) {
+                toast.success(`${item.name} acheté avec succès ! 🖼️`, { position: 'top-center', autoClose: 3000 })
+                // Recharger le catalogue
+                const backgroundCatalog = getBackgroundCatalogWithOwnership()
+                const availableBackgrounds = backgroundCatalog.filter(i => !i.owned)
+                setBackgrounds(availableBackgrounds)
+            } else {
+                toast.error(result.error ?? 'Erreur lors de l\'achat', { position: 'top-center', autoClose: 3000 })
+            }
+        } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : 'Erreur lors de l\'achat 😢'
             toast.error(errorMessage, { position: 'top-center', autoClose: 5000 })
         } finally {
             setIsPurchasing(false)
@@ -130,23 +163,60 @@ export function ShopModal ({
                                 🛍️ Boutique de {creatureName}
                             </h2>
                             <p className='text-gray-600 text-lg'>
-                                Boostez l'XP ou achetez des objets pour votre créature !
+                                Boostez l'XP, achetez des accessoires ou des arrière-plans !
                             </p>
                         </div>
 
-                        <div className='relative z-10'>
-                            <div className='mb-6 text-center'>
-                                <h3 className='text-2xl font-black text-indigo-700 mb-2 inline-flex items-center gap-2'>
-                                    <span className='text-3xl'>⚡</span>
-                                    Boosts d'XP
-                                    <span className='text-3xl'>⚡</span>
-                                </h3>
-                                <p className='text-sm text-gray-600'>
-                                    Faites progresser votre créature plus rapidement !
-                                </p>
-                            </div>
+                        {/* Onglets de catégories */}
+                        <div className='relative z-10 flex justify-center gap-3 mb-6 flex-wrap'>
+                            <button
+                                onClick={() => setSelectedCategory('xp')}
+                                className={`px-6 py-3 rounded-xl font-semibold transition-all duration-300 ${
+                                    selectedCategory === 'xp'
+                                        ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg scale-105'
+                                        : 'bg-white/70 text-gray-700 hover:bg-white hover:shadow-md'
+                                }`}
+                            >
+                                ⚡ Boosts XP
+                            </button>
+                            <button
+                                onClick={() => setSelectedCategory('accessories')}
+                                className={`px-6 py-3 rounded-xl font-semibold transition-all duration-300 ${
+                                    selectedCategory === 'accessories'
+                                        ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white shadow-lg scale-105'
+                                        : 'bg-white/70 text-gray-700 hover:bg-white hover:shadow-md'
+                                }`}
+                            >
+                                👔 Accessoires ({accessories.length})
+                            </button>
+                            <button
+                                onClick={() => setSelectedCategory('backgrounds')}
+                                className={`px-6 py-3 rounded-xl font-semibold transition-all duration-300 ${
+                                    selectedCategory === 'backgrounds'
+                                        ? 'bg-gradient-to-r from-blue-500 to-teal-500 text-white shadow-lg scale-105'
+                                        : 'bg-white/70 text-gray-700 hover:bg-white hover:shadow-md'
+                                }`}
+                            >
+                                🖼️ Arrière-plans ({backgrounds.length})
+                            </button>
+                        </div>
 
-                            <div className='grid grid-cols-1 md:grid-cols-4 gap-6 px-2 py-8 pb-2'>
+                        <div className='relative z-10'>
+                            {/* Section Boosts XP */}
+                            {selectedCategory === 'xp' && (
+                                <>
+                                    <div className='mb-6 text-center'>
+                                        <h3 className='text-2xl font-black text-indigo-700 mb-2 inline-flex items-center gap-2'>
+                                            <span className='text-3xl'>⚡</span>
+                                            Boosts d'XP
+                                            <span className='text-3xl'>⚡</span>
+                                        </h3>
+                                        <p className='text-sm text-gray-600'>
+                                            Faites progresser votre créature plus rapidement !
+                                        </p>
+                                    </div>
+
+                                    <div className='grid grid-cols-1 md:grid-cols-4 gap-6 px-2 py-8 pb-2'>
                                 {xpBoosts.map((boost) => (
                                     <XPBoostCard
                                         key={boost.id}
@@ -157,49 +227,107 @@ export function ShopModal ({
                                 ))}
                             </div>
 
-                            {/* Nouvelle section pour les objets, avec fallback si vide */}
-                            <div className='mt-6 text-center'>
-                                <h3 className='text-2xl font-black text-indigo-700 mb-2'>🧸 Objets</h3>
-                                <p className='text-sm text-gray-600 mb-4'>Achetez des items pour personnaliser ou aider votre créature.</p>
-
-                                {items.length === 0 ? (
-                                    <div className='py-8'>
-                                        <p className='text-sm text-gray-500'>Aucun objet disponible pour le moment.</p>
-                                        <p className='text-xs text-gray-400 mt-2'>Vérifie que le parent passe bien la prop `items` (tableau non vide).</p>
-                                    </div>
-                                ) : (
-                                    <div className='grid grid-cols-1 md:grid-cols-4 gap-6 px-2 py-4'>
-                                        {items.map((item) => (
-                                            <div
-                                                key={item.id}
-                                                className='bg-white rounded-2xl p-4 shadow-md flex flex-col justify-between'
-                                                aria-hidden={isPurchasing}
-                                            >
-                                                <div>
-                                                    <h4 className='text-lg font-bold text-gray-800'>{item.name}</h4>
-                                                    {item.description && <p className='text-sm text-gray-500 mt-2'>{item.description}</p>}
-                                                </div>
-                                                <div className='mt-4 flex items-center justify-between gap-4'>
-                                                    <span className='text-indigo-700 font-semibold'>{item.price} 🪙</span>
-                                                    <button
-                                                        className='px-3 py-2 rounded-lg bg-indigo-600 text-white font-semibold hover:bg-indigo-700 disabled:opacity-60'
-                                                        onClick={() => { void handleItemPurchase(item.id) }}
-                                                        disabled={isPurchasing}
-                                                    >
-                                                        {isPurchasing ? 'Achat...' : 'Acheter'}
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-
                             <div className='mt-6 p-4 bg-blue-100/50 rounded-xl border-2 border-blue-200'>
                                 <p className='text-sm text-blue-800 text-center font-semibold'>
                                     💡 Astuce : Plus le boost est gros, plus votre créature gagnera d'XP !
                                 </p>
                             </div>
+                                </>
+                            )}
+
+                            {/* Section Accessoires */}
+                            {selectedCategory === 'accessories' && (
+                                <>
+                                    <div className='mb-6 text-center'>
+                                        <h3 className='text-2xl font-black text-indigo-700 mb-2'>👔 Accessoires</h3>
+                                        <p className='text-sm text-gray-600'>Personnalisez votre monstre avec des chapeaux, lunettes et chaussures !</p>
+                                    </div>
+
+                                    {accessories.length === 0 ? (
+                                        <div className='py-12 text-center'>
+                                            <div className='text-6xl mb-4'>🎉</div>
+                                            <p className='text-gray-600 text-lg font-semibold'>
+                                                Vous possédez déjà tous les accessoires !
+                                            </p>
+                                        </div>
+                                    ) : (
+                                        <div className='grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 px-2 py-4'>
+                                            {accessories.map((item) => (
+                                                <div
+                                                    key={item.id}
+                                                    className='bg-white rounded-2xl p-4 shadow-md hover:shadow-lg transition-all duration-300'
+                                                >
+                                                    <div
+                                                        className='w-full h-24 rounded-xl mb-3 flex items-center justify-center text-4xl'
+                                                        style={{ backgroundColor: item.color ?? '#e2e8f0' }}
+                                                    />
+                                                    <div className='mb-3'>
+                                                        <h4 className='text-lg font-bold text-gray-800'>{item.name}</h4>
+                                                        <p className='text-xs text-gray-500 mt-1'>{item.description}</p>
+                                                    </div>
+                                                    <div className='flex items-center justify-between gap-2'>
+                                                        <span className='text-indigo-700 font-bold text-lg'>{item.price} 🪙</span>
+                                                        <button
+                                                            className='px-4 py-2 rounded-lg bg-gradient-to-r from-indigo-500 to-purple-500 text-white font-semibold hover:from-indigo-600 hover:to-purple-600 disabled:opacity-50 transition-all duration-300 active:scale-95'
+                                                            onClick={() => { void handleAccessoryPurchase(item) }}
+                                                            disabled={isPurchasing}
+                                                        >
+                                                            {isPurchasing ? 'Achat...' : 'Acheter'}
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </>
+                            )}
+
+                            {/* Section Backgrounds */}
+                            {selectedCategory === 'backgrounds' && (
+                                <>
+                                    <div className='mb-6 text-center'>
+                                        <h3 className='text-2xl font-black text-indigo-700 mb-2'>🖼️ Arrière-plans</h3>
+                                        <p className='text-sm text-gray-600'>Changez le décor derrière votre monstre !</p>
+                                    </div>
+
+                                    {backgrounds.length === 0 ? (
+                                        <div className='py-12 text-center'>
+                                            <div className='text-6xl mb-4'>🎉</div>
+                                            <p className='text-gray-600 text-lg font-semibold'>
+                                                Vous possédez déjà tous les arrière-plans !
+                                            </p>
+                                        </div>
+                                    ) : (
+                                        <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 px-2 py-4'>
+                                            {backgrounds.map((bg) => (
+                                                <div
+                                                    key={bg.id}
+                                                    className='bg-white rounded-2xl p-4 shadow-md hover:shadow-lg transition-all duration-300'
+                                                >
+                                                    <div
+                                                        className='w-full h-32 rounded-xl mb-3 bg-cover bg-center'
+                                                        style={{ backgroundImage: `url(${bg.imageUrl})` }}
+                                                    />
+                                                    <div className='mb-3'>
+                                                        <h4 className='text-lg font-bold text-gray-800'>{bg.name}</h4>
+                                                        <p className='text-xs text-gray-500 mt-1'>{bg.description}</p>
+                                                    </div>
+                                                    <div className='flex items-center justify-between gap-2'>
+                                                        <span className='text-blue-700 font-bold text-lg'>{bg.price} 🪙</span>
+                                                        <button
+                                                            className='px-4 py-2 rounded-lg bg-gradient-to-r from-blue-500 to-teal-500 text-white font-semibold hover:from-blue-600 hover:to-teal-600 disabled:opacity-50 transition-all duration-300 active:scale-95'
+                                                            onClick={() => { void handleBackgroundPurchase(bg) }}
+                                                            disabled={isPurchasing}
+                                                        >
+                                                            {isPurchasing ? 'Achat...' : 'Acheter'}
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </>
+                            )}
                         </div>
                     </div>
                 </div>

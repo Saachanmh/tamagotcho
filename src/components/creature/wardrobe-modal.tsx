@@ -5,7 +5,7 @@ import type React from 'react'
 import { useEffect, useState } from 'react'
 import { toast } from 'react-toastify'
 import type { AccessoryType, AccessoryItem } from '@/components/monsters/pixel-monster'
-import { getCatalogWithOwnership, equipAccessory, unequipAccessory, getEquipped, subscribeShop, type ShopItem } from '@/services/shop'
+import { getCatalogWithOwnership, equipAccessory, unequipAccessory, subscribeShop, type ShopItem, getBackgroundCatalogWithOwnership, equipBackground, type BackgroundItem } from '@/services/shop'
 
 interface WardrobeModalProps {
   onClose: () => void
@@ -21,16 +21,23 @@ export function WardrobeModal ({
   open = true
 }: WardrobeModalProps): React.ReactElement | null {
   const [ownedItems, setOwnedItems] = useState<ShopItem[]>([])
+  const [ownedBgs, setOwnedBgs] = useState<BackgroundItem[]>([])
   const [equippedAccessories, setEquippedAccessories] = useState<Partial<Record<AccessoryType, AccessoryItem | null>>>({})
-  const [selectedCategory, setSelectedCategory] = useState<'all' | 'hat' | 'glasses' | 'footwear'>('all')
+  const [equippedBg, setEquippedBg] = useState<BackgroundItem | null>(null)
+  const [selectedCategory, setSelectedCategory] = useState<'all' | 'hat' | 'glasses' | 'footwear' | 'background'>('all')
 
   useEffect(() => {
-    // Charger les accessoires possédés et équipés
-    const unsubscribe = subscribeShop(({ equipped, owned }) => {
+    // Charger les accessoires et backgrounds possédés et équipés
+    const unsubscribe = subscribeShop((state: any) => {
       const catalog = getCatalogWithOwnership()
-      const filtered = catalog.filter(item => owned.has(item.id))
+      const filtered = catalog.filter((item) => state.owned?.has?.(item.id))
       setOwnedItems(filtered)
-      setEquippedAccessories(equipped)
+      setEquippedAccessories(state.equipped ?? {})
+
+      const bgCatalog = getBackgroundCatalogWithOwnership()
+      const filteredBgs = bgCatalog.filter((bg) => state.ownedBackgrounds?.has?.(bg.id))
+      setOwnedBgs(filteredBgs)
+      setEquippedBg(state.background ?? null)
     })
 
     return unsubscribe
@@ -69,6 +76,24 @@ export function WardrobeModal ({
     }
   }
 
+  const handleEquipBackground = (bg: BackgroundItem): void => {
+    try {
+      equipBackground(bg)
+      toast.success(`${bg.name} équipé ! 🖼️`, { position: 'top-center', autoClose: 2000 })
+    } catch (error) {
+      toast.error('Erreur lors de l\'équipement du background', { position: 'top-center', autoClose: 3000 })
+    }
+  }
+
+  const handleUnequipBackground = (): void => {
+    try {
+      equipBackground(null)
+      toast.success('Background retiré !', { position: 'top-center', autoClose: 2000 })
+    } catch (error) {
+      toast.error('Erreur lors du retrait du background', { position: 'top-center', autoClose: 3000 })
+    }
+  }
+
   const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>): void => {
     if (e.target === e.currentTarget) onClose()
   }
@@ -77,15 +102,22 @@ export function WardrobeModal ({
     return Object.values(equippedAccessories).some(acc => acc?.id === itemId)
   }
 
+  const isBackgroundEquipped = (bgId: string): boolean => {
+    return equippedBg?.id === bgId
+  }
+
   const filteredItems = selectedCategory === 'all'
     ? ownedItems
     : ownedItems.filter(item => item.category === selectedCategory)
+
+  const showBgs = selectedCategory === 'background' || selectedCategory === 'all'
 
   const categories = [
     { id: 'all', label: 'Tout', icon: '🎨' },
     { id: 'hat', label: 'Chapeaux', icon: '🎩' },
     { id: 'glasses', label: 'Lunettes', icon: '🕶️' },
-    { id: 'footwear', label: 'Chaussures', icon: '👟' }
+    { id: 'footwear', label: 'Chaussures', icon: '👟' },
+    { id: 'background', label: 'Arrière-plans', icon: '🖼️' }
   ] as const
 
   return (
@@ -138,7 +170,27 @@ export function WardrobeModal ({
 
             {/* Items Grid */}
             <div className='relative z-10'>
-              {filteredItems.length === 0 ? (
+              {filteredItems.length === 0 && ownedBgs.length === 0 && selectedCategory === 'all' ? (
+                <div className='text-center py-12'>
+                  <div className='text-6xl mb-4'>🎁</div>
+                  <p className='text-gray-600 text-lg font-semibold'>
+                    Vous ne possédez aucun accessoire
+                  </p>
+                  <p className='text-gray-500 text-sm mt-2'>
+                    Visitez la boutique pour acheter des accessoires !
+                  </p>
+                </div>
+              ) : selectedCategory === 'background' && ownedBgs.length === 0 ? (
+                <div className='text-center py-12'>
+                  <div className='text-6xl mb-4'>🖼️</div>
+                  <p className='text-gray-600 text-lg font-semibold'>
+                    Vous ne possédez aucun arrière-plan
+                  </p>
+                  <p className='text-gray-500 text-sm mt-2'>
+                    Visitez la boutique pour acheter des backgrounds !
+                  </p>
+                </div>
+              ) : selectedCategory !== 'background' && filteredItems.length === 0 ? (
                 <div className='text-center py-12'>
                   <div className='text-6xl mb-4'>🎁</div>
                   <p className='text-gray-600 text-lg font-semibold'>
@@ -149,7 +201,67 @@ export function WardrobeModal ({
                   </p>
                 </div>
               ) : (
-                <div className='grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 px-2 py-4'>
+                <>
+                  {/* Backgrounds Section */}
+                  {showBgs && ownedBgs.length > 0 && (
+                    <div className='mb-6'>
+                      <h3 className='text-xl font-bold text-gray-800 mb-4'>🖼️ Arrière-plans</h3>
+                      <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 px-2 py-4'>
+                        {ownedBgs.map((bg: BackgroundItem) => {
+                          const equipped = isBackgroundEquipped(bg.id)
+                          return (
+                            <div
+                              key={bg.id}
+                              className={`bg-white rounded-2xl p-4 shadow-md transition-all duration-300 ${
+                                equipped ? 'ring-2 ring-green-500 shadow-green-200' : 'hover:shadow-lg'
+                              }`}
+                            >
+                              {/* Preview Image */}
+                              <div
+                                className='w-full h-32 rounded-xl mb-3 bg-cover bg-center relative'
+                                style={{ backgroundImage: `url(${bg.imageUrl})` }}
+                              >
+                                {equipped && (
+                                  <div className='absolute inset-0 bg-green-500/20 rounded-xl flex items-center justify-center'>
+                                    <span className='text-white text-5xl drop-shadow-lg'>✓</span>
+                                  </div>
+                                )}
+                              </div>
+
+                              {/* Item Info */}
+                              <div className='mb-3'>
+                                <h4 className='text-lg font-bold text-gray-800'>{bg.name}</h4>
+                                <p className='text-xs text-gray-500 mt-1'>{bg.description}</p>
+                                {equipped && (
+                                  <span className='inline-block mt-2 px-2 py-1 bg-green-100 text-green-700 text-xs font-semibold rounded-full'>
+                                    Équipé
+                                  </span>
+                                )}
+                              </div>
+
+                              {/* Action Button */}
+                              <button
+                                onClick={() => equipped ? handleUnequipBackground() : handleEquipBackground(bg)}
+                                className={`w-full py-2 rounded-lg font-semibold transition-all duration-300 active:scale-95 ${
+                                  equipped
+                                    ? 'bg-gradient-to-r from-red-400 to-pink-500 text-white hover:from-red-500 hover:to-pink-600'
+                                    : 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white hover:from-indigo-600 hover:to-purple-600'
+                                }`}
+                              >
+                                {equipped ? 'Retirer' : 'Équiper'}
+                              </button>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Accessories Section */}
+                  {selectedCategory !== 'background' && filteredItems.length > 0 && (
+                    <div>
+                      {selectedCategory === 'all' && <h3 className='text-xl font-bold text-gray-800 mb-4'>🎭 Accessoires</h3>}
+                      <div className='grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 px-2 py-4'>
                   {filteredItems.map((item) => {
                     const equipped = isEquipped(item.id)
                     return (
@@ -193,6 +305,9 @@ export function WardrobeModal ({
                     )
                   })}
                 </div>
+                    </div>
+                  )}
+                </>
               )}
             </div>
 

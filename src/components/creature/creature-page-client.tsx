@@ -301,8 +301,6 @@ export function CreaturePageClient ({ monster }: CreaturePageClientProps): React
           creatureName={currentMonster.name}
           creatureId={currentMonster._id}
           open={showShop}
-          items={SHOP_CATALOG}
-          onBuyItem={handleBuyItem}
         />
       )}
 
