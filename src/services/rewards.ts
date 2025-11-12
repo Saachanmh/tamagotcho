@@ -1,15 +1,13 @@
-export type MonsterActionType = 'feed' | 'cuddle' | 'play' | 'clean'
+giimport { REWARD_AMOUNTS } from '@/config/rewards'
 
-const ACTION_REWARDS: Record<MonsterActionType, number> = {
-    feed: 2,
-    cuddle: 1,
-    play: 2,
-    clean: 1
-}
+export type MonsterActionType = keyof typeof REWARD_AMOUNTS
 
 /**
  * Retourne la récompense en koins pour une action.
  */
 export function getRewardForAction (action: MonsterActionType): number {
-    return ACTION_REWARDS[action] ?? 0
+    return REWARD_AMOUNTS[action] ?? 0
 }
+
+export const AVAILABLE_ACTIONS: readonly MonsterActionType[] =
+  Object.keys(REWARD_AMOUNTS) as readonly MonsterActionType[]
