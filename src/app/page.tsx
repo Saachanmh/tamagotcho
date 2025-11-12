@@ -1,5 +1,3 @@
-import { cookies } from 'next/headers'
-import { redirect } from 'next/navigation'
 import HeaderWrapper from '@/components/header-wrapper'
 import HeroSection from '@/components/hero-section'
 import BenefitsSection from '@/components/benefits-section'
@@ -8,8 +6,6 @@ import ActionsSection from '@/components/actions-section'
 import NewsletterSection from '@/components/newsletter-section'
 import Footer from '@/components/footer'
 import { Metadata } from 'next'
-
-const COOKIE_NAME = 'better-auth.session'
 
 export const metadata: Readonly<Metadata> = {
     title: 'Tamagotcho - Adopte et prends soin de ton compagnon virtuel',
@@ -25,13 +21,8 @@ export const metadata: Readonly<Metadata> = {
     }
 }
 
-// Page d'accueil: redirection serveur si utilisateur déjà authentifié
-export default async function Home (): Promise<React.ReactNode> {
-    const cookieStore = await cookies()
-    if (cookieStore.get(COOKIE_NAME)) {
-        redirect('/app')
-    }
-
+// Page d'accueil: la redirection est gérée par le middleware
+export default function Home (): React.ReactNode {
     return (
         <div className='font-sans'>
             <HeaderWrapper />

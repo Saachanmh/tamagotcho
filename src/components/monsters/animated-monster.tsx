@@ -1,6 +1,6 @@
 'use client'
 
-import { PixelMonster } from '@/components/monsters/pixel-monster'
+import { PixelMonster, type AccessoryType, type AccessoryItem } from '@/components/monsters/pixel-monster'
 import type { MonsterTraits, MonsterState } from '@/types/monster'
 import type { MonsterAction } from '@/hooks/monsters'
 
@@ -16,6 +16,8 @@ interface AnimatedMonsterProps {
   level: number
   /** Action actuellement en cours (optionnel) */
   currentAction?: MonsterAction
+  /** Accessoires équipés depuis le placard */
+  equippedAccessories?: Partial<Record<AccessoryType, AccessoryItem | null>>
 }
 
 /**
@@ -37,13 +39,15 @@ interface AnimatedMonsterProps {
  *   traits={monsterTraits}
  *   level={5}
  *   currentAction="feed"
+ *   equippedAccessories={accessories}
  * />
  */
 export function AnimatedMonster ({
   state,
   traits,
   level,
-  currentAction
+  currentAction,
+  equippedAccessories
 }: AnimatedMonsterProps): React.ReactNode {
   return (
     <div className='relative overflow-visible'>
@@ -52,6 +56,7 @@ export function AnimatedMonster ({
         traits={traits}
         level={level}
         currentAction={currentAction}
+        equippedAccessories={equippedAccessories}
       />
     </div>
   )

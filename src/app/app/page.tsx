@@ -1,13 +1,11 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
 import DashboardContent from '@/components/dashboard/dashboard-content'
 import { getMonsters } from '@/actions/monsters.actions'
 import { useSession } from '@/lib/auth-client'
 
 function AppPage (): React.ReactNode {
-    const router = useRouter()
     const { data: session, isPending } = useSession()
     const [monsters, setMonsters] = useState<Awaited<ReturnType<typeof getMonsters>>>([])
     const [isLoading, setIsLoading] = useState(true)
@@ -53,14 +51,7 @@ function AppPage (): React.ReactNode {
         }
     }
 
-    // Redirection client si non authentifié (cohérent avec middleware et règles)
-    useEffect(() => {
-        if (isPending === false && session == null) {
-            setIsLoading(false)
-            router.replace('/')
-        }
-    }, [isPending, session, router])
-
+    // Affichage du loader pendant la vérification de session
     if (isPending === true || isLoading) {
         return (
             <div className='flex items-center justify-center min-h-screen'>
@@ -69,8 +60,14 @@ function AppPage (): React.ReactNode {
         )
     }
 
-    // Après redirection, on ne rend rien
-    if (session == null) return null
+    // Si pas de session, le middleware redirigera
+    if (session == null) {
+        return (
+            <div className='flex items-center justify-center min-h-screen'>
+                <p className='text-moccaccino-500'>Redirection...</p>
+            </div>
+        )
+    }
 
     return <DashboardContent session={session} monsters={monsters} />
 }

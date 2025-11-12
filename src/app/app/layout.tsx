@@ -1,6 +1,5 @@
 import { auth } from '@/lib/auth'
 import { headers } from 'next/headers'
-import { redirect } from 'next/navigation'
 import { MonstersAutoUpdater } from '@/components/monsters/auto-updater'
 import AppHeaderWrapper from '@/components/navigation/app-header-wrapper'
 import BottomNavWrapper from '@/components/navigation/bottom-nav-wrapper'
@@ -12,8 +11,7 @@ import BottomNavWrapper from '@/components/navigation/bottom-nav-wrapper'
  * et fournit des fonctionnalités communes comme le système de mise à jour automatique.
  *
  * Responsabilités :
- * - Protection des routes : redirection si non authentifié
- * - Récupération de la session utilisateur
+ * - Récupération de la session utilisateur (protection gérée par middleware)
  * - Affichage de la navigation (header desktop + bottom nav mobile)
  * - Activation du système de mise à jour automatique des monstres
  * - Wrapper pour toutes les pages /app/*
@@ -27,17 +25,12 @@ export default async function AppLayout ({
 }: {
   children: React.ReactNode
 }): Promise<React.ReactNode> {
-  // Récupération de la session utilisateur
+  // Récupération de la session utilisateur (le middleware a déjà vérifié l'auth)
   const session = await auth.api.getSession({
     headers: await headers()
   })
 
-  // Protection de la route : redirection si non authentifié
-  if (session === null || session === undefined) {
-    redirect('/sign-in')
-  }
-
-  const userId = session.user?.id ?? null
+  const userId = session?.user?.id ?? null
 
   return (
     <div className='flex min-h-screen flex-col'>

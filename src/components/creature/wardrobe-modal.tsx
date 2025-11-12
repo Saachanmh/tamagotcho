@@ -1,0 +1,211 @@
+// Modal "Placard" pour gérer les accessoires possédés
+'use client'
+
+import type React from 'react'
+import { useEffect, useState } from 'react'
+import { toast } from 'react-toastify'
+import type { AccessoryType, AccessoryItem } from '@/components/monsters/pixel-monster'
+import { getCatalogWithOwnership, equipAccessory, unequipAccessory, getEquipped, subscribeShop, type ShopItem } from '@/services/shop'
+
+interface WardrobeModalProps {
+  onClose: () => void
+  creatureName: string
+  creatureId: string
+  open?: boolean
+}
+
+export function WardrobeModal ({
+  onClose,
+  creatureName,
+  creatureId,
+  open = true
+}: WardrobeModalProps): React.ReactElement | null {
+  const [ownedItems, setOwnedItems] = useState<ShopItem[]>([])
+  const [equippedAccessories, setEquippedAccessories] = useState<Partial<Record<AccessoryType, AccessoryItem | null>>>({})
+  const [selectedCategory, setSelectedCategory] = useState<'all' | 'hat' | 'glasses' | 'footwear'>('all')
+
+  useEffect(() => {
+    // Charger les accessoires possédés et équipés
+    const unsubscribe = subscribeShop(({ equipped, owned }) => {
+      const catalog = getCatalogWithOwnership()
+      const filtered = catalog.filter(item => owned.has(item.id))
+      setOwnedItems(filtered)
+      setEquippedAccessories(equipped)
+    })
+
+    return unsubscribe
+  }, [])
+
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent): void => {
+      if (e.key === 'Escape') onClose()
+    }
+    window.addEventListener('keydown', handleEscape)
+    return () => window.removeEventListener('keydown', handleEscape)
+  }, [onClose])
+
+  if (!open) return null
+
+  const handleEquip = (item: ShopItem): void => {
+    try {
+      const accessoryItem: AccessoryItem = {
+        id: item.id,
+        type: item.type as AccessoryType,
+        color: item.color
+      }
+      equipAccessory(accessoryItem)
+      toast.success(`${item.name} équipé ! ✨`, { position: 'top-center', autoClose: 2000 })
+    } catch (error) {
+      toast.error('Erreur lors de l\'équipement', { position: 'top-center', autoClose: 3000 })
+    }
+  }
+
+  const handleUnequip = (type: AccessoryType): void => {
+    try {
+      unequipAccessory(type)
+      toast.success('Accessoire retiré !', { position: 'top-center', autoClose: 2000 })
+    } catch (error) {
+      toast.error('Erreur lors du retrait', { position: 'top-center', autoClose: 3000 })
+    }
+  }
+
+  const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>): void => {
+    if (e.target === e.currentTarget) onClose()
+  }
+
+  const isEquipped = (itemId: string): boolean => {
+    return Object.values(equippedAccessories).some(acc => acc?.id === itemId)
+  }
+
+  const filteredItems = selectedCategory === 'all'
+    ? ownedItems
+    : ownedItems.filter(item => item.category === selectedCategory)
+
+  const categories = [
+    { id: 'all', label: 'Tout', icon: '🎨' },
+    { id: 'hat', label: 'Chapeaux', icon: '🎩' },
+    { id: 'glasses', label: 'Lunettes', icon: '🕶️' },
+    { id: 'footwear', label: 'Chaussures', icon: '👟' }
+  ] as const
+
+  return (
+    <div
+      className='fixed inset-0 z-50 bg-black/60 backdrop-blur-md animate-fade-in'
+      onClick={handleBackdropClick}
+    >
+      <div className='fixed inset-0 z-[70] flex items-start md:items-center justify-center p-4 overflow-y-auto'>
+        <div className='relative max-w-6xl w-full animate-scale-in max-h-[calc(100vh-4rem)] overflow-auto'>
+          <div className='bg-gradient-to-br from-indigo-50 to-purple-50 rounded-3xl shadow-2xl p-8 relative overflow-visible'>
+            {/* Decorations */}
+            <div className='absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-indigo-300/20 to-purple-400/20 rounded-full blur-3xl' />
+            <div className='absolute bottom-0 left-0 w-40 h-40 bg-gradient-to-br from-pink-300/20 to-indigo-400/20 rounded-full blur-3xl' />
+
+            {/* Close Button */}
+            <button
+              onClick={onClose}
+              className='absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-gradient-to-br from-red-400 to-pink-500 text-white font-bold text-xl hover:from-red-500 hover:to-pink-600 transition-all duration-300 shadow-lg hover:scale-110 active:scale-95'
+              aria-label='Fermer'
+            >
+              ✕
+            </button>
+
+            {/* Header */}
+            <div className='relative z-10 text-center mb-6'>
+              <h2 className='text-4xl font-black bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-500 bg-clip-text text-transparent mb-2'>
+                👔 Placard de {creatureName}
+              </h2>
+              <p className='text-gray-600 text-lg'>
+                Gérez vos accessoires possédés
+              </p>
+            </div>
+
+            {/* Category Filters */}
+            <div className='relative z-10 flex justify-center gap-3 mb-6 flex-wrap'>
+              {categories.map((cat) => (
+                <button
+                  key={cat.id}
+                  onClick={() => setSelectedCategory(cat.id)}
+                  className={`px-4 py-2 rounded-xl font-semibold transition-all duration-300 ${
+                    selectedCategory === cat.id
+                      ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white shadow-lg scale-105'
+                      : 'bg-white/70 text-gray-700 hover:bg-white hover:shadow-md'
+                  }`}
+                >
+                  {cat.icon} {cat.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Items Grid */}
+            <div className='relative z-10'>
+              {filteredItems.length === 0 ? (
+                <div className='text-center py-12'>
+                  <div className='text-6xl mb-4'>🎁</div>
+                  <p className='text-gray-600 text-lg font-semibold'>
+                    Vous ne possédez aucun accessoire dans cette catégorie
+                  </p>
+                  <p className='text-gray-500 text-sm mt-2'>
+                    Visitez la boutique pour acheter des accessoires !
+                  </p>
+                </div>
+              ) : (
+                <div className='grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 px-2 py-4'>
+                  {filteredItems.map((item) => {
+                    const equipped = isEquipped(item.id)
+                    return (
+                      <div
+                        key={item.id}
+                        className={`bg-white rounded-2xl p-4 shadow-md transition-all duration-300 ${
+                          equipped ? 'ring-2 ring-green-500 shadow-green-200' : 'hover:shadow-lg'
+                        }`}
+                      >
+                        {/* Preview Color */}
+                        <div
+                          className='w-full h-24 rounded-xl mb-3 flex items-center justify-center text-4xl'
+                          style={{ backgroundColor: item.color ?? '#e2e8f0' }}
+                        >
+                          {equipped && <span className='text-white drop-shadow-lg'>✓</span>}
+                        </div>
+
+                        {/* Item Info */}
+                        <div className='mb-3'>
+                          <h4 className='text-lg font-bold text-gray-800'>{item.name}</h4>
+                          <p className='text-xs text-gray-500 mt-1'>{item.description}</p>
+                          {equipped && (
+                            <span className='inline-block mt-2 px-2 py-1 bg-green-100 text-green-700 text-xs font-semibold rounded-full'>
+                              Équipé
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Action Button */}
+                        <button
+                          onClick={() => equipped ? handleUnequip(item.type as AccessoryType) : handleEquip(item)}
+                          className={`w-full py-2 rounded-lg font-semibold transition-all duration-300 active:scale-95 ${
+                            equipped
+                              ? 'bg-gradient-to-r from-red-400 to-pink-500 text-white hover:from-red-500 hover:to-pink-600'
+                              : 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white hover:from-indigo-600 hover:to-purple-600'
+                          }`}
+                        >
+                          {equipped ? 'Retirer' : 'Équiper'}
+                        </button>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Footer Tip */}
+            <div className='relative z-10 mt-6 p-4 bg-indigo-100/50 rounded-xl border-2 border-indigo-200'>
+              <p className='text-sm text-indigo-800 text-center font-semibold'>
+                💡 Astuce : Les accessoires équipés apparaissent sur votre monstre en temps réel !
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+

@@ -81,7 +81,9 @@ function notify() {
 export function subscribeShop(callback: (state: { equipped: EquippedAccessories; owned: Set<string> }) => void) {
     listeners.add(callback)
     callback({ equipped: { ...equipped }, owned: new Set(owned) })
-    return () => listeners.delete(callback)
+    return () => {
+        listeners.delete(callback)
+    }
 }
 
 export function getEquipped(): EquippedAccessories {

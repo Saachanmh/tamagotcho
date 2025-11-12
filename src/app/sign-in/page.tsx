@@ -1,38 +1,10 @@
 import AuthFormContent from '@/components/forms/auth-form-content'
-import { auth } from '@/lib/auth'
-import { cookies, headers } from 'next/headers'
-import { redirect } from 'next/navigation'
-
-const COOKIE_NAME = 'better-auth.session'
 
 /**
  * Page de connexion.
- * Redirige un utilisateur déjà authentifié vers /app.
+ * La redirection si déjà authentifié est gérée par le middleware.
  */
-export default async function SignInPage (): Promise<React.ReactNode> {
-    // Récupération asynchrone du store de cookies (typé Promise)
-    const cookieStore = await cookies()
-    if (cookieStore.get(COOKIE_NAME)) {
-        redirect('/app')
-    }
-
-    // Fallback session via BetterAuth si pas de cookie (reconstruction Headers mutable)
-    let session = null
-    try {
-        const readonlyHeaders = await headers()
-        const h = new Headers()
-        for (const [key, value] of readonlyHeaders) {
-            h.set(key, value)
-        }
-        session = await auth.api.getSession({ headers: h })
-    } catch {
-        // Silencieux: si échec, on laisse afficher le formulaire
-    }
-
-    if (session) {
-        redirect('/app')
-    }
-
+export default function SignInPage (): React.ReactNode {
     return (
         <div className='min-h-screen bg-gradient-to-br from-moccaccino-50 via-fuchsia-blue-50 to-lochinvar-50 flex items-center justify-center p-4 relative overflow-hidden'>
             <div className='absolute inset-0 pointer-events-none overflow-hidden'>

@@ -1,7 +1,12 @@
+'use client'
+
+import { useEffect, useState } from 'react'
 import { AnimatedMonster, MonsterActions } from '@/components/monsters'
 import type { MonsterTraits, MonsterState } from '@/types/monster'
 import type { MonsterAction } from '@/hooks/monsters'
+import type { AccessoryType, AccessoryItem } from '@/components/monsters/pixel-monster'
 import { getStateLabel } from '@/lib/utils'
+import { subscribeShop, getEquipped } from '@/services/shop'
 
 /**
  * Props pour le composant CreatureMonsterDisplay
@@ -43,6 +48,18 @@ export function CreatureMonsterDisplay ({
   onAction,
   monsterId
 }: CreatureMonsterDisplayProps): React.ReactNode {
+  const [equippedAccessories, setEquippedAccessories] = useState<Partial<Record<AccessoryType, AccessoryItem | null>>>(getEquipped())
+
+  // S'abonner aux changements d'accessoires équipés
+  useEffect(() => {
+    const unsubscribe = subscribeShop(({ equipped }) => {
+      setEquippedAccessories(equipped)
+    })
+    return () => {
+      unsubscribe()
+    }
+  }, [])
+
   // Couleurs selon l'état
   const stateColors: Record<string, { bg: string, text: string, emoji: string }> = {
     happy: { bg: 'from-green-400 to-emerald-500', text: 'Joyeux', emoji: '😊' },
@@ -69,6 +86,7 @@ export function CreatureMonsterDisplay ({
             traits={traits}
             level={level}
             currentAction={currentAction}
+            equippedAccessories={equippedAccessories}
           />
         </div>
 

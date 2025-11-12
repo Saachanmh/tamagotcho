@@ -8,6 +8,7 @@ import { CreatureMonsterDisplay } from './creature-monster-display'
 import { CreatureStatsPanel } from './creature-stats-panel'
 import { LevelUpAnimation } from './level-up-animation'
 import { ShopModal } from './shop-modal'
+import { WardrobeModal } from './wardrobe-modal'
 import { useRouter } from 'next/navigation'
 import { SHOP_CATALOG } from '@/services/shop'
 import { toast } from 'react-toastify'
@@ -40,6 +41,7 @@ export function CreaturePageClient ({ monster }: CreaturePageClientProps): React
   const [showXpGain, setShowXpGain] = useState(false)
   const [xpGained, setXpGained] = useState(0)
   const [showLevelUp, setShowLevelUp] = useState(false)
+  const [showWardrobe, setShowWardrobe] = useState(false)
   const [showShop, setShowShop] = useState(false)
   const actionTimerRef = useRef<NodeJS.Timeout | null>(null)
   const router = useRouter()
@@ -222,14 +224,26 @@ export function CreaturePageClient ({ monster }: CreaturePageClientProps): React
             </div>
           </div>
 
-          {/* Bouton boutique */}
-          <button
-            onClick={() => { setShowShop(true) }}
-            className='group relative overflow-hidden inline-flex items-center gap-2 bg-gradient-to-r from-green-400 to-emerald-500 hover:from-green-500 hover:to-emerald-600 text-white font-black px-4 py-2 rounded-xl shadow-lg ring-2 ring-green-200/50 transition-all duration-300 hover:scale-105 active:scale-95'
-          >
-            <span className='text-xl'>🛍️</span>
-            <span className='hidden sm:inline'>Boutique</span>
-          </button>
+          {/* Boutons d'action */}
+          <div className='flex items-center gap-3'>
+            {/* Bouton placard */}
+            <button
+              onClick={() => { setShowWardrobe(true) }}
+              className='group relative overflow-hidden inline-flex items-center gap-2 bg-gradient-to-r from-indigo-400 to-purple-500 hover:from-indigo-500 hover:to-purple-600 text-white font-black px-4 py-2 rounded-xl shadow-lg ring-2 ring-indigo-200/50 transition-all duration-300 hover:scale-105 active:scale-95'
+            >
+              <span className='text-xl'>👔</span>
+              <span className='hidden sm:inline'>Placard</span>
+            </button>
+
+            {/* Bouton boutique */}
+            <button
+              onClick={() => { setShowShop(true) }}
+              className='group relative overflow-hidden inline-flex items-center gap-2 bg-gradient-to-r from-green-400 to-emerald-500 hover:from-green-500 hover:to-emerald-600 text-white font-black px-4 py-2 rounded-xl shadow-lg ring-2 ring-green-200/50 transition-all duration-300 hover:scale-105 active:scale-95'
+            >
+              <span className='text-xl'>🛍️</span>
+              <span className='hidden sm:inline'>Boutique</span>
+            </button>
+          </div>
         </div>
 
         {/* Grille principale - Alignée */}
@@ -268,6 +282,17 @@ export function CreaturePageClient ({ monster }: CreaturePageClientProps): React
         show={showLevelUp}
         onComplete={() => setShowLevelUp(false)}
       />
+
+      {/* Modal du placard */}
+      {showWardrobe && (
+        <WardrobeModal
+          onClose={() => { setShowWardrobe(false) }}
+          creatureName={currentMonster.name}
+          creatureId={currentMonster._id}
+          open={showWardrobe}
+        />
+      )}
+
 
       {/* Modal de la boutique */}
       {showShop && (

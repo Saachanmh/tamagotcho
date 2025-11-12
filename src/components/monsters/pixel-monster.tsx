@@ -12,9 +12,9 @@ export type AntennaStyle = 'single' | 'double' | 'curly' | 'none'
 export type AccessoryStyle = 'horns' | 'ears' | 'tail' | 'none'
 
 // Types pour la boutique / équipements
-type AccessoryType = 'horns' | 'ears' | 'tail' | 'hat' | 'glasses' | 'shoes' | 'sneakers' | 'boots' | 'slippers' | 'none'
+export type AccessoryType = 'horns' | 'ears' | 'tail' | 'hat' | 'glasses' | 'shoes' | 'sneakers' | 'boots' | 'slippers' | 'none'
 
-interface AccessoryItem {
+export interface AccessoryItem {
     id: string
     type: AccessoryType
     variant?: string
@@ -841,6 +841,4 @@ function adjustColorBrightness (hex: string, percent: number): string {
             .slice(1)
     )
 }
-
-export type { AccessoryType, AccessoryItem }
 
