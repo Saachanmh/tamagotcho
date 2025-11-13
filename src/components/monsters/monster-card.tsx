@@ -27,6 +27,8 @@ interface MonsterCardProps {
   createdAt: string | undefined
   /** Date de dernière mise à jour du monstre */
   updatedAt: string | undefined
+  /** Indique si le monstre est public */
+  isPublic?: boolean
 }
 
 /**
@@ -51,7 +53,8 @@ export function MonsterCard ({
   state,
   level,
   createdAt,
-  updatedAt
+  updatedAt,
+  isPublic
 }: MonsterCardProps): React.ReactNode {
   // Parsing des traits et normalisation des données
   const traits = parseMonsterTraits(rawTraits)
@@ -68,114 +71,120 @@ export function MonsterCard ({
     })
   }, [])
 
+  // Badge public si isPublic est true
+  const publicBadge = isPublic === true ? (
+    <span
+      className='absolute top-2 right-2 inline-flex items-center gap-1 rounded-full bg-green-600/90 px-3 py-1 text-xs font-bold text-white shadow ring-2 ring-green-300/50 backdrop-blur-md'
+      title='Monstre public'
+    >🌐 Public</span>
+  ) : null
+
   return (
-    <Link href={`/app/creatures/${id}`}>
-      <article
-        className='group relative flex flex-col overflow-hidden rounded-[2rem] bg-gradient-to-br from-yellow-50 via-pink-50 to-purple-100 p-8 shadow-[0_8px_30px_rgb(0,0,0,0.12)] ring-4 ring-white/80 transition-all duration-300 hover:scale-105 hover:shadow-[0_20px_60px_rgb(0,0,0,0.2)] hover:ring-yellow-300 cursor-pointer'
-      >
-        {/* Effet brillant qui traverse la carte au hover */}
-        <div className='pointer-events-none absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700'>
-          <div className='absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent -skew-x-12 group-hover:animate-shine' />
-        </div>
+    <Link href={`/app/creatures/${id}`} className='group relative block overflow-hidden rounded-3xl bg-gradient-to-br from-purple-50 via-pink-50 to-orange-50 p-6 shadow-xl ring-4 ring-white/80 transition-all duration-500 hover:scale-[1.02] hover:shadow-2xl'>
+      {publicBadge}
 
-        {/* Bulles décoratives animées */}
-        <div
-          className='pointer-events-none absolute -right-12 top-10 h-32 w-32 rounded-full bg-gradient-to-br from-yellow-300/30 to-orange-300/30 blur-2xl transition-all duration-500 group-hover:scale-150 group-hover:opacity-80 animate-float'
-          aria-hidden='true'
-        />
-        <div
-          className='pointer-events-none absolute -left-16 -top-12 h-40 w-40 rounded-full bg-gradient-to-br from-pink-300/30 to-purple-300/30 blur-2xl transition-all duration-500 group-hover:scale-150 group-hover:opacity-80 animate-float-delayed'
-          aria-hidden='true'
-        />
+      {/* Effet brillant qui traverse la carte au hover */}
+      <div className='pointer-events-none absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700'>
+        <div className='absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent -skew-x-12 group-hover:animate-shine' />
+      </div>
 
-        {/* Étoiles décoratives */}
-        <div className='pointer-events-none absolute top-4 right-4 text-yellow-400 text-2xl animate-twinkle'>✨</div>
-        <div className='pointer-events-none absolute bottom-4 left-4 text-pink-400 text-xl animate-twinkle-delayed'>💖</div>
+      {/* Bulles décoratives animées */}
+      <div
+        className='pointer-events-none absolute -right-12 top-10 h-32 w-32 rounded-full bg-gradient-to-br from-yellow-300/30 to-orange-300/30 blur-2xl transition-all duration-500 group-hover:scale-150 group-hover:opacity-80 animate-float'
+        aria-hidden='true'
+      />
+      <div
+        className='pointer-events-none absolute -left-16 -top-12 h-40 w-40 rounded-full bg-gradient-to-br from-pink-300/30 to-purple-300/30 blur-2xl transition-all duration-500 group-hover:scale-150 group-hover:opacity-80 animate-float-delayed'
+        aria-hidden='true'
+      />
 
-        <div className='relative flex flex-col gap-6'>
-          {/* Zone de rendu du monstre - PLUS GRANDE */}
-          <div className='relative flex items-center justify-center overflow-hidden rounded-3xl bg-white/80 p-8 ring-4 ring-white/90 shadow-inner backdrop-blur-sm group-hover:bg-white/90 transition-all duration-300 min-h-[280px]'>
-            {/* Background image si équipé */}
-            {equippedBg != null && (
-              <div
-                className='absolute inset-0 bg-cover bg-center opacity-30 group-hover:opacity-40 transition-opacity duration-300'
-                style={{ backgroundImage: `url(${equippedBg.imageUrl})` }}
+      {/* Étoiles décoratives */}
+      <div className='pointer-events-none absolute top-4 right-4 text-yellow-400 text-2xl animate-twinkle'>✨</div>
+      <div className='pointer-events-none absolute bottom-4 left-4 text-pink-400 text-xl animate-twinkle-delayed'>💖</div>
+
+      <div className='relative flex flex-col gap-6'>
+        {/* Zone de rendu du monstre - PLUS GRANDE */}
+        <div className='relative flex items-center justify-center overflow-hidden rounded-3xl bg-white/80 p-8 ring-4 ring-white/90 shadow-inner backdrop-blur-sm group-hover:bg-white/90 transition-all duration-300 min-h-[280px]'>
+          {/* Background image si équipé */}
+          {equippedBg != null && (
+            <div
+              className='absolute inset-0 bg-cover bg-center opacity-30 group-hover:opacity-40 transition-opacity duration-300'
+              style={{ backgroundImage: `url(${equippedBg.imageUrl})` }}
+            />
+          )}
+
+          {/* Effet de fond pulsant (au-dessus du background mais sous le monstre) */}
+          <div className='absolute inset-0 bg-gradient-to-br from-yellow-100/50 via-pink-100/50 to-purple-100/50 animate-pulse-slow' />
+
+          {traits !== null && (
+            <div className='relative transform transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3'>
+              <PixelMonster
+                traits={traits}
+                state={isMonsterState(state) ? state : 'happy'}
+                level={levelLabel}
               />
-            )}
+            </div>
+          )}
 
-            {/* Effet de fond pulsant (au-dessus du background mais sous le monstre) */}
-            <div className='absolute inset-0 bg-gradient-to-br from-yellow-100/50 via-pink-100/50 to-purple-100/50 animate-pulse-slow' />
+          {/* Badge d'état - Plus visible */}
+          <div className='absolute top-3 left-3 transform transition-transform duration-300 group-hover:scale-110'>
+            <MonsterStateBadge state={state} />
+          </div>
 
-            {traits !== null && (
-              <div className='relative transform transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3'>
-                <PixelMonster
-                  traits={traits}
-                  state={isMonsterState(state) ? state : 'happy'}
-                  level={levelLabel}
-                />
-              </div>
-            )}
+          {/* Effet de particules au hover */}
+          <div className='absolute inset-0 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-500'>
+            <div className='absolute top-10 left-10 text-2xl animate-float-particle'>⭐</div>
+            <div className='absolute top-20 right-12 text-2xl animate-float-particle-delayed'>✨</div>
+            <div className='absolute bottom-12 left-16 text-2xl animate-float-particle'>💫</div>
+          </div>
+        </div>
 
-            {/* Badge d'état - Plus visible */}
-            <div className='absolute top-3 left-3 transform transition-transform duration-300 group-hover:scale-110'>
-              <MonsterStateBadge state={state} />
+        {/* Informations textuelles - PLUS GRANDES */}
+        <div className='flex flex-1 flex-col gap-4 relative'>
+          <div className='flex items-start justify-between gap-4'>
+            <div className='space-y-2 flex-1'>
+              <h3 className='text-2xl font-black text-transparent bg-gradient-to-r from-purple-600 via-pink-600 to-orange-500 bg-clip-text group-hover:scale-105 transition-transform duration-300 origin-left'>
+                {name}
+              </h3>
+              {adoptionDate !== null && (
+                <p className='text-sm font-medium text-purple-600/80 flex items-center gap-2'>
+                  <span className='text-lg'>🗓️</span>
+                  Arrivé le {adoptionDate}
+                </p>
+              )}
             </div>
 
-            {/* Effet de particules au hover */}
-            <div className='absolute inset-0 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-500'>
-              <div className='absolute top-10 left-10 text-2xl animate-float-particle'>⭐</div>
-              <div className='absolute top-20 right-12 text-2xl animate-float-particle-delayed'>✨</div>
-              <div className='absolute bottom-12 left-16 text-2xl animate-float-particle'>💫</div>
+            {/* Badge de niveau - Plus imposant */}
+            <div className='relative'>
+              <div className='absolute inset-0 bg-gradient-to-r from-yellow-400 to-orange-400 rounded-2xl blur-md opacity-50 group-hover:opacity-75 transition-opacity' />
+              <span className='relative inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-yellow-400 via-orange-400 to-red-400 px-5 py-3 text-base font-black uppercase tracking-wider text-white shadow-lg ring-2 ring-white/50 group-hover:scale-110 transition-transform duration-300'>
+                <span className='text-2xl animate-bounce-slow' aria-hidden='true'>⭐</span>
+                <span>Niveau {levelLabel}</span>
+              </span>
             </div>
           </div>
 
-          {/* Informations textuelles - PLUS GRANDES */}
-          <div className='flex flex-1 flex-col gap-4 relative'>
-            <div className='flex items-start justify-between gap-4'>
-              <div className='space-y-2 flex-1'>
-                <h3 className='text-2xl font-black text-transparent bg-gradient-to-r from-purple-600 via-pink-600 to-orange-500 bg-clip-text group-hover:scale-105 transition-transform duration-300 origin-left'>
-                  {name}
-                </h3>
-                {adoptionDate !== null && (
-                  <p className='text-sm font-medium text-purple-600/80 flex items-center gap-2'>
-                    <span className='text-lg'>🗓️</span>
-                    Arrivé le {adoptionDate}
-                  </p>
-                )}
-              </div>
-
-              {/* Badge de niveau - Plus imposant */}
-              <div className='relative'>
-                <div className='absolute inset-0 bg-gradient-to-r from-yellow-400 to-orange-400 rounded-2xl blur-md opacity-50 group-hover:opacity-75 transition-opacity' />
-                <span className='relative inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-yellow-400 via-orange-400 to-red-400 px-5 py-3 text-base font-black uppercase tracking-wider text-white shadow-lg ring-2 ring-white/50 group-hover:scale-110 transition-transform duration-300'>
-                  <span className='text-2xl animate-bounce-slow' aria-hidden='true'>⭐</span>
-                  <span>Niveau {levelLabel}</span>
-                </span>
-              </div>
+          {/* Barre de progression fun */}
+          <div className='flex items-center gap-3 bg-white/60 rounded-full p-3 ring-2 ring-white/80'>
+            <span className='text-xl'>💪</span>
+            <div className='flex-1 h-3 bg-gray-200 rounded-full overflow-hidden'>
+              <div
+                className='h-full bg-gradient-to-r from-green-400 via-blue-400 to-purple-400 rounded-full transition-all duration-500 animate-gradient'
+                style={{ width: `${Math.min(levelLabel * 10, 100)}%` }}
+              />
             </div>
+            <span className='text-sm font-bold text-purple-600'>{Math.min(levelLabel * 10, 100)}%</span>
+          </div>
 
-            {/* Barre de progression fun */}
-            <div className='flex items-center gap-3 bg-white/60 rounded-full p-3 ring-2 ring-white/80'>
-              <span className='text-xl'>💪</span>
-              <div className='flex-1 h-3 bg-gray-200 rounded-full overflow-hidden'>
-                <div
-                  className='h-full bg-gradient-to-r from-green-400 via-blue-400 to-purple-400 rounded-full transition-all duration-500 animate-gradient'
-                  style={{ width: `${Math.min(levelLabel * 10, 100)}%` }}
-                />
-              </div>
-              <span className='text-sm font-bold text-purple-600'>{Math.min(levelLabel * 10, 100)}%</span>
-            </div>
-
-            {/* Bouton d'action visible */}
-            <div className='mt-2 text-center'>
-              <div className='inline-flex items-center gap-2 text-purple-600 font-bold group-hover:text-pink-600 transition-colors'>
-                <span>Voir plus</span>
-                <span className='text-xl group-hover:translate-x-2 transition-transform duration-300'>→</span>
-              </div>
+          {/* Bouton d'action visible */}
+          <div className='mt-2 text-center'>
+            <div className='inline-flex items-center gap-2 text-purple-600 font-bold group-hover:text-pink-600 transition-colors'>
+              <span>Voir plus</span>
+              <span className='text-xl group-hover:translate-x-2 transition-transform duration-300'>→</span>
             </div>
           </div>
         </div>
-      </article>
+      </div>
 
       {/* Styles pour les animations */}
       {/* Note: Les classes animate-* ci-dessous sont utilisées dans le JSX ci-dessus */}

@@ -36,4 +36,5 @@ export interface DBMonster {
   ownerId: string
   createdAt: Date
   updatedAt: Date
+  isPublic: boolean // ✅ visibilité publique
 }

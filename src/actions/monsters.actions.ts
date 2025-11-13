@@ -54,7 +54,8 @@ export async function createMonster (monsterData: CreateMonsterFormValues): Prom
     state: monsterData.state,
     level: monsterData.level,
     xp: monsterData.xp,
-    maxXp: monsterData.maxXp
+    maxXp: monsterData.maxXp,
+    isPublic: false // ✅ initialisation
   })
 
   await monster.save()
@@ -259,5 +260,66 @@ export async function doActionOnMonster (id: string, action: MonsterAction): Pro
     }
   } catch (error) {
     console.error('Error updating monster state:', error)
+  }
+}
+
+// ✅ Nouvelle action: bascule visibilité publique
+export async function toggleMonsterPublic (id: string, value: boolean): Promise<DBMonster | null> {
+  try {
+    await connectMongooseToDatabase()
+    const session = await auth.api.getSession({ headers: await headers() })
+    if (session === null || session === undefined) throw new Error('User not authenticated')
+    if (!Types.ObjectId.isValid(id)) throw new Error('Invalid monster ID format')
+
+    const monster = await Monster.findOne({ ownerId: session.user.id, _id: id }).exec()
+    if (monster === null || monster === undefined) throw new Error('Monster not found')
+
+    monster.isPublic = value
+    monster.markModified('isPublic')
+    await monster.save()
+
+    // Revalidate detail + dashboard
+    revalidatePath(`/app/creatures/${id}`)
+    revalidatePath('/app')
+
+    return JSON.parse(JSON.stringify(monster))
+  } catch (error) {
+    console.error('Error toggling monster public flag:', error)
+    return null
+  }
+}
+
+// Fonction utilitaire pour mettre à jour le flag public d'un monstre
+export async function updateMonsterPublicFlag (ownerId: string, monsterId: string, value: boolean): Promise<DBMonster | null> {
+  try {
+    console.log('📝 updateMonsterPublicFlag called:', { ownerId, monsterId, value })
+    await connectMongooseToDatabase()
+
+    if (!Types.ObjectId.isValid(monsterId)) {
+      console.log('❌ Invalid ObjectId')
+      return null
+    }
+
+    console.log('🔍 Searching for monster...')
+    const monster = await Monster.findOne({ ownerId, _id: monsterId }).exec()
+
+    if (monster == null) {
+      console.log('❌ Monster not found')
+      return null
+    }
+
+    console.log('📄 Monster found:', { id: monster._id, currentIsPublic: monster.isPublic })
+    monster.isPublic = value
+    monster.markModified('isPublic')
+    console.log('💾 Saving monster with isPublic =', value)
+    await monster.save()
+    console.log('✅ Monster saved successfully')
+
+    const result = JSON.parse(JSON.stringify(monster))
+    console.log('📤 Returning monster:', { id: result._id, isPublic: result.isPublic })
+    return result
+  } catch (e) {
+    console.error('❌ updateMonsterPublicFlag error', e)
+    return null
   }
 }

@@ -36,6 +36,8 @@ interface CreaturePageClientProps {
  * @returns {React.ReactNode} Page complète de détail de la créature
  */
 export function CreaturePageClient ({ monster }: CreaturePageClientProps): React.ReactNode {
+  console.log('🎮 CreaturePageClient mounted with monster:', { id: monster._id, isPublic: monster.isPublic })
+
   const [currentAction, setCurrentAction] = useState<MonsterAction>(null)
   const [currentMonster, setCurrentMonster] = useState<DBMonster>(monster)
   const [showXpGain, setShowXpGain] = useState(false)
@@ -43,6 +45,7 @@ export function CreaturePageClient ({ monster }: CreaturePageClientProps): React
   const [showLevelUp, setShowLevelUp] = useState(false)
   const [showWardrobe, setShowWardrobe] = useState(false)
   const [showShop, setShowShop] = useState(false)
+  const [isUpdatingVisibility, setIsUpdatingVisibility] = useState(false)
   const actionTimerRef = useRef<NodeJS.Timeout | null>(null)
   const router = useRouter()
 
@@ -67,31 +70,36 @@ export function CreaturePageClient ({ monster }: CreaturePageClientProps): React
         if (response.ok) {
           const updatedMonster: DBMonster = await response.json()
 
-          // Détection du gain d'XP
-          if (updatedMonster.xp !== currentMonster.xp ||
-              updatedMonster.level !== currentMonster.level) {
-            // Calcul du gain d'XP
-            const xpDiff = updatedMonster.level > currentMonster.level
-              ? updatedMonster.xp + (updatedMonster.level - currentMonster.level - 1) * currentMonster.maxXp + (currentMonster.maxXp - currentMonster.xp)
-              : updatedMonster.xp - currentMonster.xp
+          setCurrentMonster(prev => {
+            // Détection du gain d'XP
+            if (updatedMonster.xp !== prev.xp || updatedMonster.level !== prev.level) {
+              // Calcul du gain d'XP
+              const xpDiff = updatedMonster.level > prev.level
+                ? updatedMonster.xp + (updatedMonster.level - prev.level - 1) * prev.maxXp + (prev.maxXp - prev.xp)
+                : updatedMonster.xp - prev.xp
 
-            if (xpDiff > 0) {
-              setXpGained(xpDiff)
-              setShowXpGain(true)
+              if (xpDiff > 0) {
+                setXpGained(xpDiff)
+                setShowXpGain(true)
 
-              // Masquer l'animation après 2 secondes
-              setTimeout(() => {
-                setShowXpGain(false)
-              }, 2000)
+                // Masquer l'animation après 2 secondes
+                setTimeout(() => {
+                  setShowXpGain(false)
+                }, 2000)
+              }
+
+              // Détection du level-up
+              if (updatedMonster.level > prev.level) {
+                setShowLevelUp(true)
+              }
             }
 
-            // Détection du level-up
-            if (updatedMonster.level > currentMonster.level) {
-              setShowLevelUp(true)
+            // ✅ CORRECTION: On synchronise isPublic depuis la DB SAUF si on est en train de le modifier
+            return {
+              ...updatedMonster,
+              isPublic: isUpdatingVisibility ? prev.isPublic : updatedMonster.isPublic
             }
-          }
-
-          setCurrentMonster(updatedMonster)
+          })
         }
       } catch (error) {
         console.error('Erreur lors de la récupération du monstre :', error)
@@ -103,7 +111,7 @@ export function CreaturePageClient ({ monster }: CreaturePageClientProps): React
     }, 1000)
 
     return () => clearInterval(interval)
-  }, [monster, currentMonster])
+  }, [monster._id, isUpdatingVisibility])
 
   // Nettoyage du timer d'action au démontage du composant
   useEffect(() => {
@@ -188,6 +196,39 @@ export function CreaturePageClient ({ monster }: CreaturePageClientProps): React
     }
   }
 
+  async function togglePublic (): Promise<void> {
+    if (isUpdatingVisibility) return
+    setIsUpdatingVisibility(true)
+    try {
+      const desired = !currentMonster.isPublic
+      console.log('🔄 Toggle public clicked:', { currentState: currentMonster.isPublic, desiredState: desired, monsterId: currentMonster._id })
+
+      const res = await fetch('/api/monsters/toggle-public', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: currentMonster._id, isPublic: desired })
+      })
+
+      console.log('📡 Response status:', res.status)
+      const data = await res.json()
+      console.log('📦 Response data:', data)
+
+      if (res.ok && data?.monster != null) {
+        console.log('✅ Updating local state:', { newIsPublic: data.monster.isPublic })
+        setCurrentMonster(prev => ({ ...prev, isPublic: data.monster.isPublic }))
+        toast.success(data.monster.isPublic ? 'Monstre rendu public 🌐' : 'Monstre redevenu privé 🔒')
+      } else {
+        console.error('❌ Toggle failed:', data.error)
+        toast.error(data.error ?? 'Échec de mise à jour de la visibilité')
+      }
+    } catch (e) {
+      console.error('❌ Toggle error:', e)
+      toast.error('Erreur lors du changement de visibilité')
+    } finally {
+      setIsUpdatingVisibility(false)
+    }
+  }
+
   return (
     <div className='min-h-screen bg-gradient-to-br from-yellow-100 via-pink-100 to-purple-200 py-6 relative overflow-hidden'>
       {/* Bulles décoratives animées */}
@@ -242,6 +283,17 @@ export function CreaturePageClient ({ monster }: CreaturePageClientProps): React
             >
               <span className='text-xl'>🛍️</span>
               <span className='hidden sm:inline'>Boutique</span>
+            </button>
+
+            {/* Bouton public/privé */}
+            <button
+              onClick={() => { void togglePublic() }}
+              disabled={isUpdatingVisibility}
+              className={`group relative overflow-hidden inline-flex items-center gap-2 px-4 py-2 rounded-xl shadow-lg ring-2 transition-all duration-300 active:scale-95 font-black ${currentMonster.isPublic ? 'bg-green-600 hover:bg-green-700 text-white ring-green-300/50' : 'bg-gray-300 hover:bg-gray-400 text-gray-800 ring-gray-400/50'}`}
+            >
+              <span className='text-xl'>{currentMonster.isPublic ? '🌐' : '🔒'}</span>
+              <span className='hidden sm:inline'>{currentMonster.isPublic ? 'Public' : 'Privé'}</span>
+              {isUpdatingVisibility && <span className='text-xs animate-pulse'>...</span>}
             </button>
           </div>
         </div>
