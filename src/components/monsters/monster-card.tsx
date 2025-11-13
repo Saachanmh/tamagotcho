@@ -74,9 +74,11 @@ export function MonsterCard ({
   // Badge public si isPublic est true
   const publicBadge = isPublic === true ? (
     <span
-      className='absolute top-2 right-2 inline-flex items-center gap-1 rounded-full bg-green-600/90 px-3 py-1 text-xs font-bold text-white shadow ring-2 ring-green-300/50 backdrop-blur-md'
+      className='absolute top-3 right-3 z-50 inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-green-500 to-emerald-600 px-4 py-2 text-sm font-black text-white shadow-xl ring-4 ring-white/80 backdrop-blur-md transform transition-all duration-300 hover:scale-110 animate-pulse-slow'
       title='Monstre public'
-    >🌐 Public</span>
+    >
+      🌐 Public
+    </span>
   ) : null
 
   return (

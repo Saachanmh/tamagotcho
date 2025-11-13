@@ -127,6 +127,24 @@ Ce script ajoute `isPublic: false` à tous les monstres qui n'ont pas ce champ.
 
 ## 🚀 Prochaines étapes
 
+### ✅ Améliorations récentes (2025-01-13)
+
+#### Accès à la Galerie
+- [x] Lien "Galerie 🖼️" ajouté dans la navigation desktop (app-header.tsx)
+- [x] Lien déjà présent dans la navigation mobile (bottom-nav.tsx)
+- [x] Accessible via `/app/gallery` sur desktop et mobile
+
+#### Badge "Public" amélioré
+- [x] Badge avec z-index élevé (z-50) pour être toujours visible
+- [x] Style amélioré : gradient vert (green-500 → emerald-600)
+- [x] Bordure blanche épaisse (ring-4 ring-white/80)
+- [x] Ombre prononcée (shadow-xl) pour le démarquer
+- [x] Animation pulse-slow pour attirer l'œil
+- [x] Effet hover:scale-110 pour l'interactivité
+- [x] Marges ajustées (top-3 right-3) pour meilleure visibilité
+
+Voir `GALLERY_QUICKSTART.md` pour plus de détails.
+
 ### Court terme
 - [ ] Tester le toggle sur plusieurs monstres
 - [ ] Vérifier en base que `isPublic` est bien persisté

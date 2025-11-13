@@ -60,7 +60,8 @@ export default function AppHeader ({ walletBalance }: AppHeaderProps): React.Rea
   }
 
   const navItems = [
-    { href: '/app', label: 'Dashboard', icon: '🏠', color: 'from-purple-400 to-pink-500' }
+    { href: '/', label: 'Dashboard', icon: '🏠', color: 'from-purple-400 to-pink-500' },
+    { href: '/app/gallery', label: 'Galerie', icon: '🖼️', color: 'from-amber-400 to-orange-500' }
   ]
 
   return (
@@ -68,7 +69,7 @@ export default function AppHeader ({ walletBalance }: AppHeaderProps): React.Rea
       <nav className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8'>
         <div className='flex justify-between items-center h-20'>
           {/* Logo - Plus fun */}
-          <Link href='/app' className='flex-shrink-0 group'>
+          <Link href='/' className='flex-shrink-0 group'>
             <div className='flex items-center space-x-3 transform transition-transform duration-300 group-hover:scale-110'>
               <div className='relative'>
                 <div className='absolute inset-0 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full blur-md opacity-50 group-hover:opacity-75 transition-opacity' />
