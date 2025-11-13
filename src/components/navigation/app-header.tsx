@@ -5,6 +5,8 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { authClient } from '@/lib/auth-client'
 import { useState } from 'react'
+import { QuestsButton } from '@/components/quests/quests-button'
+import { QuestsModal } from '@/components/quests/quests-modal'
 
 interface AppHeaderProps {
   /** Solde du wallet de l'utilisateur */
@@ -23,6 +25,7 @@ export default function AppHeader ({ walletBalance }: AppHeaderProps): React.Rea
   const pathname = usePathname()
   const router = useRouter()
   const [isLoggingOut, setIsLoggingOut] = useState(false)
+  const [showQuests, setShowQuests] = useState(false)
 
   const handleLogout = async (): Promise<void> => {
     if (isLoggingOut) return // Éviter les double-clics
@@ -127,6 +130,9 @@ export default function AppHeader ({ walletBalance }: AppHeaderProps): React.Rea
               <span className='relative z-10 text-2xl font-black'>{walletBalance.toLocaleString()}</span>
               <span className='relative z-10 text-sm uppercase tracking-wider opacity-90'>Koins</span>
             </Link>
+
+            {/* Bouton Quêtes */}
+            <QuestsButton onClick={() => { setShowQuests(true) }} />
           </div>
 
           {/* Actions utilisateur - Plus fun */}

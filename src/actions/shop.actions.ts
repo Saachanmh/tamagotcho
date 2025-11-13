@@ -77,6 +77,10 @@ export async function buyAccessory (creatureId: string, itemId: string): Promise
   // Débit des Koins : si solde insuffisant, subtractKoins lancera une erreur
   await subtractKoins(item.price)
 
+  // 🎯 Tracking de la quête "achète un accessoire dans la boutique"
+  const { trackQuestAction } = await import('./quests.actions')
+  await trackQuestAction('buy_accessory', creatureId)
+
   // Pas d'enregistrement serveur d'accessoires (gestion côté client/localStorage)
   // On revalide les chemins pour rafraîchir le wallet et la page créature
   revalidatePath(`/creature/${creatureId}`)

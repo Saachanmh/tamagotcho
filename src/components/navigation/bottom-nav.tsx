@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { authClient } from '@/lib/auth-client'
 import { useState } from 'react'
+import { QuestsModal } from '@/components/quests/quests-modal'
 
 interface BottomNavProps {
   /** Solde du wallet de l'utilisateur */
@@ -59,13 +60,18 @@ export default function BottomNav ({ walletBalance }: BottomNavProps): React.Rea
   const navItems = [
     { href: '/', label: 'Home', icon: '🏠', color: 'from-purple-400 to-pink-500' },
     { href: '/app/gallery', label: 'Galerie', icon: '🖼️', color: 'from-amber-400 to-orange-500' },
+    { href: '#quests', label: 'Quêtes', icon: '🎯', action: 'quests', color: 'from-cyan-400 to-blue-500' },
     { href: '/app/wallet', label: String(walletBalance.toLocaleString()), icon: '🪙', color: 'from-yellow-400 to-orange-500', isWallet: true },
     { href: '#logout', label: 'Quitter', icon: '🚪', action: 'logout', color: 'from-red-400 to-rose-500' }
   ]
 
+  const [showQuests, setShowQuests] = useState(false)
+
   const handleNavClick = (item: typeof navItems[0]): void => {
     if (item.action === 'logout') {
       setShowLogoutConfirm(true)
+    } else if (item.action === 'quests') {
+      setShowQuests(true)
     }
   }
 
@@ -73,9 +79,9 @@ export default function BottomNav ({ walletBalance }: BottomNavProps): React.Rea
     <>
       {/* Barre de navigation fixée en bas - Plus fun */}
       <nav className='md:hidden fixed bottom-0 left-0 right-0 bg-gradient-to-r from-purple-100 via-pink-100 to-orange-100 border-t-4 border-purple-300 z-50 shadow-[0_-10px_30px_rgba(0,0,0,0.15)]'>
-        <div className='grid grid-cols-4 gap-2 px-4 py-3 safe-area-inset-bottom'>
+        <div className='grid grid-cols-5 gap-2 px-4 py-3 safe-area-inset-bottom'>
           {navItems.map((item) => {
-            if (item.action === 'logout') {
+            if (item.action === 'logout' || item.action === 'quests') {
               return (
                 <button
                   key={item.label}
@@ -151,6 +157,16 @@ export default function BottomNav ({ walletBalance }: BottomNavProps): React.Rea
           </div>
         </div>
       )}
+
+      {/* Modal des quêtes */}
+      <QuestsModal
+        open={showQuests}
+        onClose={() => { setShowQuests(false) }}
+        onKoinsUpdated={() => {
+          // Recharger la page pour rafraîchir le solde
+          window.location.reload()
+        }}
+      />
 
       {/* Styles pour les animations */}
       <style jsx>

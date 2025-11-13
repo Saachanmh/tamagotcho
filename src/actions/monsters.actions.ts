@@ -9,6 +9,7 @@ import { revalidatePath } from 'next/cache'
 import { headers } from 'next/headers'
 import { Types } from 'mongoose'
 import { MonsterAction } from '@/hooks/monsters'
+import { trackQuestAction } from './quests.actions'
 
 /**
  * Crée un nouveau monstre pour l'utilisateur authentifié
@@ -238,16 +239,19 @@ export async function doActionOnMonster (id: string, action: MonsterAction): Pro
 
         // Gain d'XP pour action correcte (25 XP)
         const xpGain = 25
+        const oldLevel = Number(monster.level)
         const currentXp = Number(monster.xp)
 
         monster.xp = currentXp + xpGain
 
+        let leveledUp = false
         // Vérification du passage de niveau
         while (Number(monster.xp) >= Number(monster.maxXp)) {
           // Passage au niveau supérieur
           monster.level = Number(monster.level) + 1
           monster.xp = Number(monster.xp) - Number(monster.maxXp)
           // Nouveau palier d'XP : level * 100
+          leveledUp = true
           monster.maxXp = Number(monster.level) * 100
         }
 
@@ -255,11 +259,30 @@ export async function doActionOnMonster (id: string, action: MonsterAction): Pro
         monster.markModified('xp')
         monster.markModified('maxXp')
         monster.markModified('level')
+
+        // 🎯 Tracking des quêtes
+        // Quête "nourris 5 fois ton monstre"
+        if (action === 'feed') {
+          await trackQuestAction('feed', id)
+        }
+
+        // Quête "interagis avec 3 monstres différents"
+        await trackQuestAction('interact', id)
+
+        // Quête "fais évoluer un monstre d'un niveau"
+        if (leveledUp) {
+          await trackQuestAction('level_up', id)
+        }
         await monster.save()
       }
     }
   } catch (error) {
     console.error('Error updating monster state:', error)
+    // 🎯 Tracking de la quête "rends un monstre public"
+    if (value === true) {
+      await trackQuestAction('make_public', id)
+    }
+
   }
 }
 
