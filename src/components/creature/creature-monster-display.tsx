@@ -7,6 +7,7 @@ import type { MonsterAction } from '@/hooks/monsters'
 import type { AccessoryType, AccessoryItem } from '@/components/monsters/pixel-monster'
 import { getStateLabel } from '@/lib/utils'
 import { subscribeShop, getEquipped } from '@/services/shop'
+import type { BackgroundItem } from '@/services/shop'
 
 /**
  * Props pour le composant CreatureMonsterDisplay
@@ -49,11 +50,13 @@ export function CreatureMonsterDisplay ({
   monsterId
 }: CreatureMonsterDisplayProps): React.ReactNode {
   const [equippedAccessories, setEquippedAccessories] = useState<Partial<Record<AccessoryType, AccessoryItem | null>>>(getEquipped())
+  const [equippedBg, setEquippedBg] = useState<BackgroundItem | null>(null)
 
-  // S'abonner aux changements d'accessoires équipés
+  // S'abonner aux changements d'accessoires équipés et du background
   useEffect(() => {
-    const unsubscribe = subscribeShop(({ equipped }) => {
+    const unsubscribe = subscribeShop(({ equipped, background }) => {
       setEquippedAccessories(equipped)
+      setEquippedBg(background ?? null)
     })
     return () => {
       unsubscribe()
@@ -78,8 +81,21 @@ export function CreatureMonsterDisplay ({
       <div className='pointer-events-none absolute -left-16 -top-12 h-48 w-48 rounded-full bg-gradient-to-br from-pink-300/30 to-purple-300/30 blur-2xl animate-float-delayed' />
 
       {/* Zone d'affichage du monstre animé - PLUS GRANDE */}
-      <div className='relative aspect-square max-w-lg mx-auto mb-8'>
-        <div className='absolute inset-0 bg-gradient-to-br from-yellow-100/50 via-pink-100/50 to-purple-100/50 rounded-3xl animate-pulse-slow' />
+      <div className='relative aspect-square max-w-lg mx-auto mb-8 overflow-hidden rounded-3xl'>
+        {/* Image de background équipée en plein format */}
+        {equippedBg != null && (
+          <img
+            src={encodeURI(equippedBg.imageUrl)}
+            alt='Arrière-plan équipé'
+            className='absolute inset-0 w-full h-full object-cover pointer-events-none select-none'
+            draggable={false}
+          />
+        )}
+        {/* Gradient de fond seulement si pas de background personnalisé */}
+        {equippedBg == null && (
+          <div className='absolute inset-0 bg-gradient-to-br from-yellow-100/50 via-pink-100/50 to-purple-100/50 rounded-3xl animate-pulse-slow' />
+        )}
+
         <div className='relative p-8'>
           <AnimatedMonster
             state={state}

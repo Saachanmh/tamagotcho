@@ -67,7 +67,9 @@ export function MonsterCard ({
   // Charger le background équipé
   useEffect(() => {
     return subscribeShop((state: any) => {
-      setEquippedBg(state?.background ?? null)
+      const bg = state?.background ?? null
+      console.log('[MonsterCard] Background update:', bg)
+      setEquippedBg(bg)
     })
   }, [])
 
@@ -106,17 +108,25 @@ export function MonsterCard ({
 
       <div className='relative flex flex-col gap-6'>
         {/* Zone de rendu du monstre - PLUS GRANDE */}
-        <div className='relative flex items-center justify-center overflow-hidden rounded-3xl bg-white/80 p-8 ring-4 ring-white/90 shadow-inner backdrop-blur-sm group-hover:bg-white/90 transition-all duration-300 min-h-[280px]'>
-          {/* Background image si équipé */}
+        <div
+          className='relative flex items-center justify-center overflow-hidden rounded-3xl p-8 ring-4 ring-white/90 shadow-inner backdrop-blur-sm transition-all duration-300 min-h-[280px]'
+        >
           {equippedBg != null && (
-            <div
-              className='absolute inset-0 bg-cover bg-center opacity-30 group-hover:opacity-40 transition-opacity duration-300'
-              style={{ backgroundImage: `url(${equippedBg.imageUrl})` }}
+            <img
+              src={encodeURI(equippedBg.imageUrl)}
+              alt='Background équipé'
+              className='absolute inset-0 w-full h-full object-cover pointer-events-none select-none'
+              draggable={false}
             />
           )}
+          {equippedBg == null && (
+            <div className='absolute inset-0 bg-gradient-to-br from-yellow-100/50 via-pink-100/50 to-purple-100/50 animate-pulse-slow' />
+          )}
 
-          {/* Effet de fond pulsant (au-dessus du background mais sous le monstre) */}
-          <div className='absolute inset-0 bg-gradient-to-br from-yellow-100/50 via-pink-100/50 to-purple-100/50 animate-pulse-slow' />
+          {/* Effet voile supplémentaire léger au hover si background présent */}
+          {equippedBg != null && (
+            <div className='absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-10 transition-opacity duration-300 pointer-events-none' />
+          )}
 
           {traits !== null && (
             <div className='relative transform transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3'>
