@@ -63,7 +63,7 @@ export default function AppHeader ({ walletBalance }: AppHeaderProps): React.Rea
   }
 
   const navItems = [
-    { href: '/', label: 'Dashboard', icon: '🏠', color: 'from-purple-400 to-pink-500' },
+    { href: '/app', label: 'Dashboard', icon: '🏠', color: 'from-purple-400 to-pink-500' },
     { href: '/app/gallery', label: 'Galerie', icon: '🖼️', color: 'from-amber-400 to-orange-500' }
   ]
 
