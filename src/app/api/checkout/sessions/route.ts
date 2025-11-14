@@ -20,27 +20,32 @@ export async function POST (request: Request): Promise<Response> {
     return new Response('Product not found', { status: 404 })
   }
 
-    const checkoutSession = await stripe.checkout.sessions.create({
-        payment_method_types: ['card'],
-        line_items: [
-            {
-                price_data: {
-                    currency: 'eur',
-                    product: product.productId,
-                    unit_amount: product.price * 100
-                },
-                quantity: 1
-            }
-        ],
-        customer_email: session.user.email,
-        mode: 'payment',
-        success_url: `${process.env.NEXT_PUBLIC_APP_URL as string}/app?session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: `${process.env.NEXT_PUBLIC_APP_URL as string}/wallet`,
-        metadata: {
-            userId: session.user.id,
-            productId: product.productId
-        }
-    })
+  // Construire des URLs absolues valides (avec schéma + host)
+  const origin = new URL(request.url).origin
+  const successUrl = `${origin}/app?session_id={CHECKOUT_SESSION_ID}`
+  const cancelUrl = `${origin}/wallet`
 
-    return new Response(JSON.stringify({ url: checkoutSession.url }), { status: 200 })
+  const checkoutSession = await stripe.checkout.sessions.create({
+    payment_method_types: ['card'],
+    line_items: [
+      {
+        price_data: {
+          currency: 'eur',
+          product: product.productId,
+          unit_amount: product.price * 100
+        },
+        quantity: 1
+      }
+    ],
+    customer_email: session.user.email,
+    mode: 'payment',
+    success_url: successUrl,
+    cancel_url: cancelUrl,
+    metadata: {
+      userId: session.user.id,
+      productId: product.productId
+    }
+  })
+
+  return new Response(JSON.stringify({ url: checkoutSession.url }), { status: 200 })
 }
