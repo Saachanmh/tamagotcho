@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 import { toast } from 'react-toastify'
 import { xpBoosts } from '@/config/shop.config'
 import { XPBoostCard } from './xp-boost-card'
-import { buyXpBoost, buyAccessory as buyAccessoryAction, buyBackgroundAction } from '@/actions/shop.actions'
+import { buyXpBoost, buyAccessory as buyAccessoryAction, buyBackgroundAction, type ShopActionResult } from '@/actions/shop.actions'
 import {
     getCatalogWithOwnership,
     getBackgroundCatalogWithOwnership,
@@ -61,27 +61,17 @@ export function ShopModal ({
     const handleXpPurchase = async (boostId: string): Promise<void> => {
         setIsPurchasing(true)
         try {
-            await buyXpBoost(creatureId, boostId)
+            const result: ShopActionResult = await buyXpBoost(creatureId, boostId)
+            if (!result.ok) {
+                toast.error(result.code === 'INSUFFICIENT_BALANCE' ? result.error : (result.error ?? 'Erreur lors de l\'achat du boost 😢'), { position: 'top-center', autoClose: 5000 })
+                return
+            }
             toast.success('Boost d\'XP acheté avec succès ! 🎉', { position: 'top-center', autoClose: 3000 })
             setTimeout(() => { onClose() }, 500)
         } catch (error) {
-            let errorMessage = 'Erreur lors de l\'achat du boost 😢'
-
-            if (error instanceof Error) {
-                if (error.message.includes('Insufficient balance')) {
-                    errorMessage = '💰 Solde insuffisant ! Vous n\'avez pas assez de Koins pour acheter ce boost.'
-                } else if (error.message.includes('not authenticated')) {
-                    errorMessage = '🔒 Vous devez être connecté pour acheter des boosts.'
-                } else if (error.message.includes('Monster not found')) {
-                    errorMessage = '👾 Monstre introuvable.'
-                } else if (error.message.includes('Boost not found')) {
-                    errorMessage = '⚡ Boost introuvable dans le catalogue.'
-                } else {
-                    errorMessage = error.message
-                }
-            }
-
-            toast.error(errorMessage, { position: 'top-center', autoClose: 5000 })
+            // Ne devrait plus arriver mais on garde un fallback
+            const message = error instanceof Error ? error.message : 'Erreur lors de l\'achat du boost 😢'
+            toast.error(message, { position: 'top-center', autoClose: 5000 })
         } finally {
             setIsPurchasing(false)
         }
@@ -90,8 +80,11 @@ export function ShopModal ({
     const handleAccessoryPurchase = async (item: AccessoryShopItem): Promise<void> => {
         setIsPurchasing(true)
         try {
-            // Appel de l'action serveur qui débite le wallet
-            await buyAccessoryAction(creatureId, item.id)
+            const result: ShopActionResult = await buyAccessoryAction(creatureId, item.id)
+            if (!result.ok) {
+                toast.error(result.code === 'INSUFFICIENT_BALANCE' ? result.error : (result.error ?? 'Erreur lors de l\'achat 😢'), { position: 'top-center', autoClose: 5000 })
+                return
+            }
 
             // Si succès, enregistrer localement
             await buyAccessoryLocal(item)
@@ -103,23 +96,8 @@ export function ShopModal ({
             const availableAccessories = accessoryCatalog.filter(i => !i.owned)
             setAccessories(availableAccessories)
         } catch (error) {
-            let errorMessage = 'Erreur lors de l\'achat 😢'
-
-            if (error instanceof Error) {
-                if (error.message.includes('Insufficient balance')) {
-                    errorMessage = '💰 Solde insuffisant ! Vous n\'avez pas assez de Koins pour acheter cet accessoire.'
-                } else if (error.message.includes('not authenticated')) {
-                    errorMessage = '🔒 Vous devez être connecté pour acheter des accessoires.'
-                } else if (error.message.includes('Monster not found')) {
-                    errorMessage = '👾 Monstre introuvable.'
-                } else if (error.message.includes('Item not found')) {
-                    errorMessage = '🎨 Accessoire introuvable dans le catalogue.'
-                } else {
-                    errorMessage = error.message
-                }
-            }
-
-            toast.error(errorMessage, { position: 'top-center', autoClose: 5000 })
+            const message = error instanceof Error ? error.message : 'Erreur lors de l\'achat 😢'
+            toast.error(message, { position: 'top-center', autoClose: 5000 })
         } finally {
             setIsPurchasing(false)
         }
@@ -128,8 +106,11 @@ export function ShopModal ({
     const handleBackgroundPurchase = async (item: BackgroundItem): Promise<void> => {
         setIsPurchasing(true)
         try {
-            // Appel de l'action serveur qui débite le wallet
-            await buyBackgroundAction(creatureId, item.id)
+            const result: ShopActionResult = await buyBackgroundAction(creatureId, item.id)
+            if (!result.ok) {
+                toast.error(result.code === 'INSUFFICIENT_BALANCE' ? result.error : (result.error ?? 'Erreur lors de l\'achat 😢'), { position: 'top-center', autoClose: 5000 })
+                return
+            }
 
             // Si succès, enregistrer localement
             await buyBackgroundLocal(item)
@@ -141,23 +122,8 @@ export function ShopModal ({
             const availableBackgrounds = backgroundCatalog.filter(i => !i.owned)
             setBackgrounds(availableBackgrounds)
         } catch (error) {
-            let errorMessage = 'Erreur lors de l\'achat 😢'
-
-            if (error instanceof Error) {
-                if (error.message.includes('Insufficient balance')) {
-                    errorMessage = '💰 Solde insuffisant ! Vous n\'avez pas assez de Koins pour acheter cet arrière-plan.'
-                } else if (error.message.includes('not authenticated')) {
-                    errorMessage = '🔒 Vous devez être connecté pour acheter des arrière-plans.'
-                } else if (error.message.includes('Monster not found')) {
-                    errorMessage = '👾 Monstre introuvable.'
-                } else if (error.message.includes('Background not found')) {
-                    errorMessage = '🖼️ Arrière-plan introuvable dans le catalogue.'
-                } else {
-                    errorMessage = error.message
-                }
-            }
-
-            toast.error(errorMessage, { position: 'top-center', autoClose: 5000 })
+            const message = error instanceof Error ? error.message : 'Erreur lors de l\'achat 😢'
+            toast.error(message, { position: 'top-center', autoClose: 5000 })
         } finally {
             setIsPurchasing(false)
         }
