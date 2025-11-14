@@ -9,6 +9,8 @@ import { headers } from 'next/headers'
 import { SHOP_CATALOG } from '@/services/shop'
 import { subtractKoins } from './wallet.actions'
 import Wallet from '@/db/models/wallet.model'
+import OwnedAccessory from '@/db/models/owned-accessory.model'
+import OwnedBackground from '@/db/models/owned-background.model'
 
 type ActionOk = { ok: true }
 type ActionErr = { ok: false, error: string, code?:
@@ -136,6 +138,13 @@ export async function buyAccessory (creatureId: string, itemId: string): Promise
       return mapErrorToResult(err)
     }
 
+    // Persister l'accessoire possédé
+    await OwnedAccessory.updateOne(
+      { ownerId: user.id, monsterId: creatureId, itemId },
+      { $setOnInsert: { ownerId: user.id, monsterId: creatureId, itemId } },
+      { upsert: true }
+    )
+
     // 🎯 Tracking de la quête "achète un accessoire dans la boutique"
     const { trackQuestAction } = await import('./quests.actions')
     await trackQuestAction('buy_accessory', creatureId)
@@ -186,6 +195,13 @@ export async function buyBackgroundAction (creatureId: string, itemId: string): 
       }
       return mapErrorToResult(err)
     }
+
+    // Persister le background possédé
+    await OwnedBackground.updateOne(
+      { ownerId: user.id, monsterId: creatureId, itemId },
+      { $setOnInsert: { ownerId: user.id, monsterId: creatureId, itemId } },
+      { upsert: true }
+    )
 
     revalidatePath(`/creature/${creatureId}`)
     revalidatePath('/wallet')

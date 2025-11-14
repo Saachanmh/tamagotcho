@@ -10,7 +10,8 @@ import {
     buyAccessory as buyAccessoryLocal,
     buyBackground as buyBackgroundLocal,
     type ShopItem as AccessoryShopItem,
-    type BackgroundItem
+    type BackgroundItem,
+    initOwnership
 } from '@/services/shop'
 
 interface ShopModalProps {
@@ -47,8 +48,15 @@ export function ShopModal ({
       setBackgrounds(availableBackgrounds)
     }
 
-    loadShopItems()
-  }, [open])
+    async function initAndLoad() {
+      try {
+        await initOwnership(creatureId)
+      } catch {}
+      loadShopItems()
+    }
+
+    if (open) { void initAndLoad() } else { loadShopItems() }
+  }, [open, creatureId])
 
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent): void => {
@@ -86,8 +94,8 @@ export function ShopModal ({
                 return
             }
 
-            // Si succès, enregistrer localement
-            await buyAccessoryLocal(item)
+            // Si succès, recharger depuis le serveur au lieu du localStorage
+            await initOwnership(creatureId)
 
             toast.success(`${item.name} acheté avec succès ! 🎉`, { position: 'top-center', autoClose: 3000 })
 
@@ -112,8 +120,8 @@ export function ShopModal ({
                 return
             }
 
-            // Si succès, enregistrer localement
-            await buyBackgroundLocal(item)
+            // Si succès, recharger depuis le serveur au lieu du localStorage
+            await initOwnership(creatureId)
 
             toast.success(`${item.name} acheté avec succès ! 🖼️`, { position: 'top-center', autoClose: 3000 })
 

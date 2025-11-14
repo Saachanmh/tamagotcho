@@ -13,6 +13,7 @@ import { useRouter } from 'next/navigation'
 import { SHOP_CATALOG } from '@/services/shop'
 import { toast } from 'react-toastify'
 import type { ShopActionResult } from '@/actions/shop.actions'
+import { initOwnership } from '@/services/shop'
 
 /**
  * Props pour le composant CreaturePageClient
@@ -113,6 +114,11 @@ export function CreaturePageClient ({ monster }: CreaturePageClientProps): React
 
     return () => clearInterval(interval)
   }, [monster._id, isUpdatingVisibility])
+
+  // Synchroniser l’inventaire possédé pour ce monstre/utilisateur
+  useEffect(() => {
+    void initOwnership(monster._id)
+  }, [monster._id])
 
   // Nettoyage du timer d'action au démontage du composant
   useEffect(() => {

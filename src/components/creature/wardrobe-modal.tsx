@@ -5,7 +5,7 @@ import type React from 'react'
 import { useEffect, useState } from 'react'
 import { toast } from 'react-toastify'
 import type { AccessoryType, AccessoryItem } from '@/components/monsters/pixel-monster'
-import { getCatalogWithOwnership, equipAccessory, unequipAccessory, subscribeShop, type ShopItem, getBackgroundCatalogWithOwnership, equipBackground, type BackgroundItem } from '@/services/shop'
+import { getCatalogWithOwnership, equipAccessory, unequipAccessory, subscribeShop, type ShopItem, getBackgroundCatalogWithOwnership, equipBackground, type BackgroundItem, initOwnership } from '@/services/shop'
 
 interface WardrobeModalProps {
   onClose: () => void
@@ -40,8 +40,11 @@ export function WardrobeModal ({
       setEquippedBg(state.background ?? null)
     })
 
+    // Initialiser depuis le serveur à l'ouverture, pour le monstre courant
+    if (open) { void initOwnership(creatureId) }
+
     return unsubscribe
-  }, [])
+  }, [creatureId, open])
 
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent): void => {
@@ -324,4 +327,3 @@ export function WardrobeModal ({
     </div>
   )
 }
-

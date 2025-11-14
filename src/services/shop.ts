@@ -91,14 +91,12 @@ export const BACKGROUND_CATALOG: BackgroundItem[] = [
 type EquippedAccessories = Partial<Record<AccessoryType, AccessoryItem | null>>
 
 const STORAGE_KEY = 'tamagotcho:equipped'
-const OWNED_KEY = 'tamagotcho:owned'
 const BACKGROUND_KEY = 'tamagotcho:background'
-const OWNED_BACKGROUNDS_KEY = 'tamagotcho:owned-backgrounds'
 
 let equipped: EquippedAccessories = loadEquipped()
-let owned: Set<string> = loadOwned()
+let owned: Set<string> = new Set() // Chargé uniquement depuis le serveur, jamais depuis localStorage
 let equippedBackground: BackgroundItem | null = loadEquippedBackground()
-let ownedBackgrounds: Set<string> = loadOwnedBackgrounds()
+let ownedBackgrounds: Set<string> = new Set() // Chargé uniquement depuis le serveur, jamais depuis localStorage
 
 const listeners = new Set<(state: {
     equipped: EquippedAccessories
@@ -116,15 +114,6 @@ function loadEquipped(): EquippedAccessories {
     }
 }
 
-function loadOwned(): Set<string> {
-    try {
-        const raw = typeof window !== 'undefined' ? localStorage.getItem(OWNED_KEY) : null
-        return new Set(raw ? JSON.parse(raw) : [])
-    } catch {
-        return new Set()
-    }
-}
-
 // Ajout: loaders pour les backgrounds
 function loadEquippedBackground(): BackgroundItem | null {
     try {
@@ -135,23 +124,14 @@ function loadEquippedBackground(): BackgroundItem | null {
     }
 }
 
-function loadOwnedBackgrounds(): Set<string> {
-    try {
-        const raw = typeof window !== 'undefined' ? localStorage.getItem(OWNED_BACKGROUNDS_KEY) : null
-        return new Set(raw ? JSON.parse(raw) : [])
-    } catch {
-        return new Set()
-    }
-}
 
 function persist() {
     try {
         if (typeof window !== 'undefined') {
             localStorage.setItem(STORAGE_KEY, JSON.stringify(equipped))
-            localStorage.setItem(OWNED_KEY, JSON.stringify([...owned]))
-            // Ajout: persistance des backgrounds
             localStorage.setItem(BACKGROUND_KEY, JSON.stringify(equippedBackground))
-            localStorage.setItem(OWNED_BACKGROUNDS_KEY, JSON.stringify([...ownedBackgrounds]))
+            // owned et ownedBackgrounds ne sont JAMAIS persistés en localStorage
+            // Ils viennent uniquement du serveur
         }
     } catch {}
 }
@@ -202,24 +182,17 @@ export function getOwnedBackgrounds(): Set<string> {
 }
 
 export async function buyAccessory(item: ShopItem): Promise<{ ok: boolean; error?: string }> {
-    // Logique d'achat (ici simplified - pas de vérification de monnaie)
-    if (owned.has(item.id)) {
-        return { ok: false, error: 'Déjà possédé' }
-    }
-
-    owned.add(item.id)
-    persist()
+    // Cette fonction est appelée APRÈS l'achat serveur réussi
+    // Elle sert juste à notifier l'UI pour rafraîchir
+    // L'ownership réel est géré côté serveur
     notify()
     return { ok: true }
 }
 
 export async function buyBackground(item: BackgroundItem): Promise<{ ok: boolean; error?: string }> {
-    if (ownedBackgrounds.has(item.id)) {
-        return { ok: false, error: 'Déjà possédé' }
-    }
-
-    ownedBackgrounds.add(item.id)
-    persist()
+    // Cette fonction est appelée APRÈS l'achat serveur réussi
+    // Elle sert juste à notifier l'UI pour rafraîchir
+    // L'ownership réel est géré côté serveur
     notify()
     return { ok: true }
 }
@@ -256,4 +229,22 @@ export function getBackgroundCatalogWithOwnership(): BackgroundItem[] {
         ...item,
         owned: ownedBackgrounds.has(item.id)
     }))
+}
+
+export async function initOwnership(monsterId?: string): Promise<void> {
+    try {
+        if (typeof window === 'undefined') return
+        const url = monsterId ? `/api/shop/owned?monsterId=${encodeURIComponent(monsterId)}` : '/api/shop/owned'
+        const res = await fetch(url, { cache: 'no-store' })
+        if (!res.ok) return
+        const data: { accessories: string[]; backgrounds: string[] } = await res.json()
+        // Remplace l'état owned/ownedBackgrounds par le serveur
+        owned = new Set(data.accessories)
+        ownedBackgrounds = new Set(data.backgrounds)
+        // Ne pas équiper automatiquement: laisser equipped / equippedBackground intacts ou à null
+        persist()
+        notify()
+    } catch (e) {
+        console.warn('initOwnership failed', e)
+    }
 }
