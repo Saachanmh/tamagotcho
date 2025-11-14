@@ -1,6 +1,9 @@
 import { getWallet } from '@/actions/wallet.actions'
 import WalletClient from '@/components/wallet/wallet-client'
 
+// ✅ Force dynamic rendering pour éviter l'erreur de static build
+export const dynamic = 'force-dynamic'
+
 /**
  * Page dédiée au Wallet (Portefeuille de Koins)
  *

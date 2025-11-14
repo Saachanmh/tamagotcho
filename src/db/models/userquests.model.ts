@@ -85,7 +85,6 @@ const userQuestsSchema = new mongoose.Schema<IUserQuests>({
 })
 
 // Index pour optimiser les requêtes
-userQuestsSchema.index({ userId: 1 })
 userQuestsSchema.index({ lastResetDate: 1 })
 
 const UserQuests = mongoose.models.UserQuests ?? mongoose.model<IUserQuests>('UserQuests', userQuestsSchema)

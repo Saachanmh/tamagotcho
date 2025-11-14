@@ -239,7 +239,6 @@ export async function doActionOnMonster (id: string, action: MonsterAction): Pro
 
         // Gain d'XP pour action correcte (25 XP)
         const xpGain = 25
-        const oldLevel = Number(monster.level)
         const currentXp = Number(monster.xp)
 
         monster.xp = currentXp + xpGain
@@ -298,7 +297,7 @@ export async function toggleMonsterPublic (id: string, value: boolean): Promise<
     await monster.save()
 
     // 🎯 Tracking de la quête "rends un monstre public"
-    if (value === true) {
+    if (value) {
       await trackQuestAction('make_public', id)
     }
 
