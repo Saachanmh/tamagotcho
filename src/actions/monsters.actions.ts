@@ -278,10 +278,6 @@ export async function doActionOnMonster (id: string, action: MonsterAction): Pro
     }
   } catch (error) {
     console.error('Error updating monster state:', error)
-    // 🎯 Tracking de la quête "rends un monstre public"
-    if (value === true) {
-      await trackQuestAction('make_public', id)
-    }
 
   }
 }
@@ -300,6 +296,11 @@ export async function toggleMonsterPublic (id: string, value: boolean): Promise<
     monster.isPublic = value
     monster.markModified('isPublic')
     await monster.save()
+
+    // 🎯 Tracking de la quête "rends un monstre public"
+    if (value === true) {
+      await trackQuestAction('make_public', id)
+    }
 
     // Revalidate detail + dashboard
     revalidatePath(`/app/creatures/${id}`)
