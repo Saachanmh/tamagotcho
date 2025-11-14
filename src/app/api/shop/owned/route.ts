@@ -27,8 +27,8 @@ export async function GET (req: Request): Promise<Response> {
       OwnedBackground.find(query).lean().exec()
     ])
 
-    const accessories = accRows.map(r => r.itemId)
-    const backgrounds = bgRows.map(r => r.itemId)
+    const accessories = accRows.map((r: any) => r.itemId as string)
+    const backgrounds = bgRows.map((r: any) => r.itemId as string)
 
     return NextResponse.json({ accessories, backgrounds })
   } catch (e) {

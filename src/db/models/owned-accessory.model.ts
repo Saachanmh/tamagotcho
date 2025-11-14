@@ -1,4 +1,3 @@
-// filepath: c:\Users\chloe\Documents\MDS\M1\tamagotcho\src\db\models\owned-accessory.model.ts
 import mongoose from 'mongoose'
 
 const { Schema } = mongoose
