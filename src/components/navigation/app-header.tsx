@@ -177,6 +177,16 @@ export default function AppHeader ({ walletBalance }: AppHeaderProps): React.Rea
         .animate-bounce-slow { animation: bounce-slow 2s ease-in-out infinite; }
       `}
       </style>
+
+      {/* Modal des quêtes */}
+      <QuestsModal
+        open={showQuests}
+        onClose={() => { setShowQuests(false) }}
+        onKoinsUpdated={() => {
+          // Recharger la page pour rafraîchir le solde
+          window.location.reload()
+        }}
+      />
     </header>
   )
 }

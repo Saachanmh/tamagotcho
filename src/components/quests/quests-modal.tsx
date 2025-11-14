@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { getUserQuests, claimQuestReward } from '@/actions/quests.actions'
 import { QUEST_CATALOG, getNextResetDate } from '@/config/quests.config'
 import type { ActiveQuest } from '@/db/models/userquests.model'
@@ -24,8 +24,8 @@ export function QuestsModal ({ open, onClose, onKoinsUpdated }: QuestsModalProps
   const [claiming, setClaiming] = useState<string | null>(null)
   const [timeUntilReset, setTimeUntilReset] = useState('')
 
-  // Charger les quêtes
-  const loadQuests = async (): Promise<void> => {
+  // Charger les quêtes - mémorisé pour éviter la récursion infinie
+  const loadQuests = useCallback(async (): Promise<void> => {
     try {
       setLoading(true)
       const data = await getUserQuests()
@@ -36,14 +36,14 @@ export function QuestsModal ({ open, onClose, onKoinsUpdated }: QuestsModalProps
     } finally {
       setLoading(false)
     }
-  }
+  }, []) // Pas de dépendances - la fonction est stable
 
   // Charger les quêtes au montage et quand la modal s'ouvre
   useEffect(() => {
     if (open) {
       void loadQuests()
     }
-  }, [open])
+  }, [open, loadQuests]) // loadQuests maintenant dans les dépendances
 
   // Timer pour le reset
   useEffect(() => {

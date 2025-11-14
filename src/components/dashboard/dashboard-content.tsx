@@ -94,10 +94,13 @@ function DashboardContent ({ session, monsters }: { session: Session, monsters: 
       {/* Header mobile sticky - Visible uniquement sur mobile */}
       <div className='md:hidden sticky top-0 z-50 bg-gradient-to-r from-purple-400 via-pink-400 to-orange-400 shadow-lg'>
         <div className='flex items-center justify-between px-4 py-3'>
-          <Link href='/' className='flex items-center gap-2 hover:opacity-80 transition-opacity active:scale-95'>
+          <button
+            onClick={() => { window.location.href = '/' }}
+            className='flex items-center gap-2 hover:opacity-80 transition-opacity active:scale-95 bg-transparent border-0 cursor-pointer'
+          >
             <span className='text-2xl'>🏠</span>
             <h1 className='text-lg font-black text-white'>Dashboard</h1>
-          </Link>
+          </button>
 
           <button
             onClick={handleCreateMonster}

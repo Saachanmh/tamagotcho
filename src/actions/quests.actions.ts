@@ -13,6 +13,7 @@ import {
   DAILY_QUESTS_COUNT
 } from '@/config/quests.config'
 import type { ActiveQuest } from '@/db/models/userquests.model'
+import type { IUserQuests } from '@/db/models/userquests.model'
 
 export interface UserQuestsData {
   activeQuests: ActiveQuest[]
@@ -25,7 +26,8 @@ export interface UserQuestsData {
  */
 export async function getUserQuests (): Promise<UserQuestsData> {
   try {
-    const session = await auth.api.getSession({ headers: await headers() })
+    const headersList = await headers()
+    const session = await auth.api.getSession({ headers: headersList })
 
     if (session?.user?.id == null) {
       throw new Error('User not authenticated')
@@ -33,16 +35,18 @@ export async function getUserQuests (): Promise<UserQuestsData> {
 
     await connectMongooseToDatabase()
 
-    let userQuests = await UserQuests.findOne({ userId: session.user.id })
+    let userQuests = await UserQuests.findOne({ userId: session.user.id }).lean()
 
     // Si pas de quêtes ou si le dernier reset n'est pas aujourd'hui, générer de nouvelles quêtes
     if (userQuests == null || !isToday(userQuests.lastResetDate)) {
       userQuests = await generateNewDailyQuests(session.user.id)
     }
 
+    const sanitized = sanitizeUserQuests(userQuests)
+
     return {
-      activeQuests: userQuests.activeQuests,
-      lastResetDate: userQuests.lastResetDate
+      activeQuests: sanitized.activeQuests,
+      lastResetDate: sanitized.lastResetDate
     }
   } catch (error) {
     console.error('❌ Error fetching user quests:', error)
@@ -53,7 +57,7 @@ export async function getUserQuests (): Promise<UserQuestsData> {
 /**
  * Génère de nouvelles quêtes journalières pour un utilisateur
  */
-async function generateNewDailyQuests (userId: string): Promise<any> {
+async function generateNewDailyQuests (userId: string): Promise<IUserQuests> {
   await connectMongooseToDatabase()
 
   // Sélectionner 3 quêtes aléatoires
@@ -72,19 +76,17 @@ async function generateNewDailyQuests (userId: string): Promise<any> {
   })
 
   // Upsert du document
-  const userQuests = await UserQuests.findOneAndUpdate(
+  const userQuestsDoc = await UserQuests.findOneAndUpdate(
     { userId },
-    {
-      userId,
-      activeQuests,
-      lastResetDate: new Date()
-    },
+    { userId, activeQuests, lastResetDate: new Date() },
     { upsert: true, new: true }
   )
 
+  const sanitized = sanitizeUserQuests(userQuestsDoc)
+
   console.log(`✅ Generated ${DAILY_QUESTS_COUNT} new daily quests for user ${userId}`)
 
-  return userQuests
+  return sanitized
 }
 
 /**
@@ -96,7 +98,8 @@ export async function updateQuestProgress (
   increment: number = 1
 ): Promise<{ success: boolean, completed?: boolean, alreadyCompleted?: boolean }> {
   try {
-    const session = await auth.api.getSession({ headers: await headers() })
+    const headersList = await headers()
+    const session = await auth.api.getSession({ headers: headersList })
 
     if (session?.user?.id == null) {
       throw new Error('User not authenticated')
@@ -104,21 +107,21 @@ export async function updateQuestProgress (
 
     await connectMongooseToDatabase()
 
-    const userQuests = await UserQuests.findOne({ userId: session.user.id })
+    const userQuestsDoc = await UserQuests.findOne({ userId: session.user.id })
 
-    if (userQuests == null) {
+    if (userQuestsDoc == null) {
       return { success: false }
     }
 
     // Trouver la quête dans les quêtes actives
-    const questIndex = userQuests.activeQuests.findIndex((q: ActiveQuest) => q.questId === questId)
+    const questIndex = userQuestsDoc.activeQuests.findIndex((q: ActiveQuest) => q.questId === questId)
 
     if (questIndex === -1) {
       // Quête non active aujourd'hui
       return { success: false }
     }
 
-    const quest = userQuests.activeQuests[questIndex]
+    const quest = userQuestsDoc.activeQuests[questIndex]
 
     // Si déjà complétée, ne rien faire
     if (quest.completed) {
@@ -134,7 +137,7 @@ export async function updateQuestProgress (
       quest.completedAt = new Date()
 
       // Sauvegarder
-      await userQuests.save()
+      await userQuestsDoc.save()
 
       console.log(`🎉 Quest "${questId}" completed for user ${session.user.id}!`)
 
@@ -142,7 +145,7 @@ export async function updateQuestProgress (
     }
 
     // Sauvegarder
-    await userQuests.save()
+    await userQuestsDoc.save()
 
     return { success: true, completed: false }
   } catch (error) {
@@ -157,7 +160,8 @@ export async function updateQuestProgress (
  */
 export async function claimQuestReward (questId: QuestType): Promise<{ success: boolean, reward?: number, error?: string }> {
   try {
-    const session = await auth.api.getSession({ headers: await headers() })
+    const headersList = await headers()
+    const session = await auth.api.getSession({ headers: headersList })
 
     if (session?.user?.id == null) {
       return { success: false, error: 'Not authenticated' }
@@ -165,14 +169,13 @@ export async function claimQuestReward (questId: QuestType): Promise<{ success: 
 
     await connectMongooseToDatabase()
 
-    const userQuests = await UserQuests.findOne({ userId: session.user.id })
-
-    if (userQuests == null) {
+    const userQuestsDoc = await UserQuests.findOne({ userId: session.user.id })
+    if (userQuestsDoc == null) {
       return { success: false, error: 'No quests found' }
     }
 
     // Trouver la quête
-    const quest = userQuests.activeQuests.find((q: ActiveQuest) => q.questId === questId)
+    const quest = userQuestsDoc.activeQuests.find((q: ActiveQuest) => q.questId === questId)
 
     if (quest == null) {
       return { success: false, error: 'Quest not found' }
@@ -203,7 +206,7 @@ export async function claimQuestReward (questId: QuestType): Promise<{ success: 
 
     // Marquer la quête comme réclamée
     quest.claimed = true
-    await userQuests.save()
+    await userQuestsDoc.save()
 
     console.log(`💰 User ${session.user.id} claimed ${reward} koins from quest "${questId}"`)
 
@@ -219,7 +222,8 @@ export async function claimQuestReward (questId: QuestType): Promise<{ success: 
  */
 export async function trackQuestAction (action: 'feed' | 'level_up' | 'interact' | 'buy_accessory' | 'make_public', monsterId?: string): Promise<void> {
   try {
-    const session = await auth.api.getSession({ headers: await headers() })
+    const headersList = await headers()
+    const session = await auth.api.getSession({ headers: headersList })
 
     if (session?.user?.id == null) {
       return
@@ -267,3 +271,16 @@ async function trackUniqueMonsterInteraction (_userId: string, _monsterId: strin
   await updateQuestProgress('interact_3_monsters', 1)
 }
 
+// Helper pour convertir un document Mongoose en objet simple et limiter les champs retournés
+function sanitizeUserQuests (doc: any): IUserQuests {
+  if (doc == null) return doc
+  // Si c'est un document Mongoose, utiliser toObject()
+  const raw = typeof doc.toObject === 'function' ? doc.toObject() : doc
+  return {
+    userId: raw.userId,
+    activeQuests: raw.activeQuests ?? [],
+    lastResetDate: raw.lastResetDate,
+    createdAt: raw.createdAt,
+    updatedAt: raw.updatedAt
+  }
+}
