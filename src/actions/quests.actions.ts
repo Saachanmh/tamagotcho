@@ -35,18 +35,21 @@ export async function getUserQuests (): Promise<UserQuestsData> {
 
     await connectMongooseToDatabase()
 
-    let userQuests = await UserQuests.findOne({ userId: session.user.id }).lean()
+    const userQuestsRaw = await UserQuests.findOne({ userId: session.user.id }).lean()
+    let userQuests: IUserQuests | null = userQuestsRaw != null ? sanitizeUserQuests(userQuestsRaw) : null
 
     // Si pas de quêtes ou si le dernier reset n'est pas aujourd'hui, générer de nouvelles quêtes
-    if (userQuests == null || !isToday(userQuests.lastResetDate)) {
-      userQuests = await generateNewDailyQuests(session.user.id)
+    if (userQuests == null || !isToday(new Date(userQuests.lastResetDate))) {
+      const regenerated = await generateNewDailyQuests(session.user.id)
+      userQuests = regenerated
     }
 
-    const sanitized = sanitizeUserQuests(userQuests)
+    // userQuests est maintenant un objet plat garanti
+    const sanitized = userQuests
 
     return {
-      activeQuests: sanitized.activeQuests,
-      lastResetDate: sanitized.lastResetDate
+      activeQuests: sanitized!.activeQuests,
+      lastResetDate: sanitized!.lastResetDate
     }
   } catch (error) {
     console.error('❌ Error fetching user quests:', error)
