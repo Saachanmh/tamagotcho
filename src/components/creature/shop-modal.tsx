@@ -1,17 +1,14 @@
-// typescript
-'use client'
-
 import type React from 'react'
 import { useEffect, useState } from 'react'
 import { toast } from 'react-toastify'
 import { xpBoosts } from '@/config/shop.config'
 import { XPBoostCard } from './xp-boost-card'
-import { buyXpBoost } from '@/actions/shop.actions'
+import { buyXpBoost, buyAccessory as buyAccessoryAction, buyBackgroundAction } from '@/actions/shop.actions'
 import {
     getCatalogWithOwnership,
     getBackgroundCatalogWithOwnership,
-    buyAccessory,
-    buyBackground,
+    buyAccessory as buyAccessoryLocal,
+    buyBackground as buyBackgroundLocal,
     type ShopItem as AccessoryShopItem,
     type BackgroundItem
 } from '@/services/shop'
@@ -93,19 +90,35 @@ export function ShopModal ({
     const handleAccessoryPurchase = async (item: AccessoryShopItem): Promise<void> => {
         setIsPurchasing(true)
         try {
-            // TODO: Intégrer avec le système de wallet pour déduire les koins
-            const result = await buyAccessory(item)
-            if (result.ok) {
-                toast.success(`${item.name} acheté avec succès ! 🎉`, { position: 'top-center', autoClose: 3000 })
-                // Recharger le catalogue
-                const accessoryCatalog = getCatalogWithOwnership()
-                const availableAccessories = accessoryCatalog.filter(i => !i.owned)
-                setAccessories(availableAccessories)
-            } else {
-                toast.error(result.error ?? 'Erreur lors de l\'achat', { position: 'top-center', autoClose: 3000 })
-            }
+            // Appel de l'action serveur qui débite le wallet
+            await buyAccessoryAction(creatureId, item.id)
+
+            // Si succès, enregistrer localement
+            await buyAccessoryLocal(item)
+
+            toast.success(`${item.name} acheté avec succès ! 🎉`, { position: 'top-center', autoClose: 3000 })
+
+            // Recharger le catalogue
+            const accessoryCatalog = getCatalogWithOwnership()
+            const availableAccessories = accessoryCatalog.filter(i => !i.owned)
+            setAccessories(availableAccessories)
         } catch (error) {
-            const errorMessage = error instanceof Error ? error.message : 'Erreur lors de l\'achat 😢'
+            let errorMessage = 'Erreur lors de l\'achat 😢'
+
+            if (error instanceof Error) {
+                if (error.message.includes('Insufficient balance')) {
+                    errorMessage = '💰 Solde insuffisant ! Vous n\'avez pas assez de Koins pour acheter cet accessoire.'
+                } else if (error.message.includes('not authenticated')) {
+                    errorMessage = '🔒 Vous devez être connecté pour acheter des accessoires.'
+                } else if (error.message.includes('Monster not found')) {
+                    errorMessage = '👾 Monstre introuvable.'
+                } else if (error.message.includes('Item not found')) {
+                    errorMessage = '🎨 Accessoire introuvable dans le catalogue.'
+                } else {
+                    errorMessage = error.message
+                }
+            }
+
             toast.error(errorMessage, { position: 'top-center', autoClose: 5000 })
         } finally {
             setIsPurchasing(false)
@@ -115,19 +128,35 @@ export function ShopModal ({
     const handleBackgroundPurchase = async (item: BackgroundItem): Promise<void> => {
         setIsPurchasing(true)
         try {
-            // TODO: Intégrer avec le système de wallet pour déduire les koins
-            const result = await buyBackground(item)
-            if (result.ok) {
-                toast.success(`${item.name} acheté avec succès ! 🖼️`, { position: 'top-center', autoClose: 3000 })
-                // Recharger le catalogue
-                const backgroundCatalog = getBackgroundCatalogWithOwnership()
-                const availableBackgrounds = backgroundCatalog.filter(i => !i.owned)
-                setBackgrounds(availableBackgrounds)
-            } else {
-                toast.error(result.error ?? 'Erreur lors de l\'achat', { position: 'top-center', autoClose: 3000 })
-            }
+            // Appel de l'action serveur qui débite le wallet
+            await buyBackgroundAction(creatureId, item.id)
+
+            // Si succès, enregistrer localement
+            await buyBackgroundLocal(item)
+
+            toast.success(`${item.name} acheté avec succès ! 🖼️`, { position: 'top-center', autoClose: 3000 })
+
+            // Recharger le catalogue
+            const backgroundCatalog = getBackgroundCatalogWithOwnership()
+            const availableBackgrounds = backgroundCatalog.filter(i => !i.owned)
+            setBackgrounds(availableBackgrounds)
         } catch (error) {
-            const errorMessage = error instanceof Error ? error.message : 'Erreur lors de l\'achat 😢'
+            let errorMessage = 'Erreur lors de l\'achat 😢'
+
+            if (error instanceof Error) {
+                if (error.message.includes('Insufficient balance')) {
+                    errorMessage = '💰 Solde insuffisant ! Vous n\'avez pas assez de Koins pour acheter cet arrière-plan.'
+                } else if (error.message.includes('not authenticated')) {
+                    errorMessage = '🔒 Vous devez être connecté pour acheter des arrière-plans.'
+                } else if (error.message.includes('Monster not found')) {
+                    errorMessage = '👾 Monstre introuvable.'
+                } else if (error.message.includes('Background not found')) {
+                    errorMessage = '🖼️ Arrière-plan introuvable dans le catalogue.'
+                } else {
+                    errorMessage = error.message
+                }
+            }
+
             toast.error(errorMessage, { position: 'top-center', autoClose: 5000 })
         } finally {
             setIsPurchasing(false)
@@ -143,16 +172,17 @@ export function ShopModal ({
             className='fixed inset-0 z-50 bg-black/60 backdrop-blur-md animate-fade-in'
             onClick={handleBackdropClick}
         >
-            <div className='fixed inset-0 z-[70] flex items-start md:items-center justify-center p-4 overflow-y-auto'>
-                <div className='relative max-w-7xl w-full animate-scale-in max-h-[calc(100vh-4rem)] overflow-auto'>
+            <div className='fixed inset-0 z-50 flex items-start md:items-center justify-center p-4 overflow-y-auto'>
+                <div className='relative max-w-7xl w-full animate-scale-in max-h-[calc(100vh-4rem)] overflow-auto' onClick={(e) => e.stopPropagation()}>
                     {/* changed overflow-hidden -> overflow-visible to avoid clipping item cards */}
-                    <div className='bg-gradient-to-br from-purple-50 to-pink-50 rounded-3xl shadow-2xl p-8 relative overflow-visible'>
-                        <div className='absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-yellow-300/20 to-orange-400/20 rounded-full blur-3xl' />
-                        <div className='absolute bottom-0 left-0 w-40 h-40 bg-gradient-to-br from-pink-300/20 to-purple-400/20 rounded-full blur-3xl' />
+                    <div className='bg-gradient-to-br from-purple-50 to-pink-50 rounded-3xl shadow-2xl p-8 relative'>
+                        <div className='absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-yellow-300/20 to-orange-400/20 rounded-full blur-3xl pointer-events-none' />
+                        <div className='absolute bottom-0 left-0 w-40 h-40 bg-gradient-to-br from-pink-300/20 to-purple-400/20 rounded-full blur-3xl pointer-events-none' />
 
                         <button
                             onClick={onClose}
-                            className='absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-gradient-to-br from-red-400 to-pink-500 text-white font-bold text-xl hover:from-red-500 hover:to-pink-600 transition-all duration-300 shadow-lg hover:scale-110 active:scale-95'
+                            type="button"
+                            className='absolute top-4 right-4 z-[100] w-10 h-10 rounded-full bg-gradient-to-br from-red-400 to-pink-500 text-white font-bold text-xl hover:from-red-500 hover:to-pink-600 transition-all duration-300 shadow-lg hover:scale-110 active:scale-95 cursor-pointer'
                             aria-label='Fermer'
                         >
                             ✕

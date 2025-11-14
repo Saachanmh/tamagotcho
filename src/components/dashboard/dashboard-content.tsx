@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Link from 'next/link'
 import { authClient } from '@/lib/auth-client'
 import { createMonster } from '@/actions/monsters.actions'
 import type { CreateMonsterFormValues } from '@/types/forms/create-monster-form'
@@ -90,17 +91,34 @@ function DashboardContent ({ session, monsters }: { session: Session, monsters: 
 
   return (
     <div className='relative min-h-screen overflow-hidden bg-gradient-to-br from-yellow-100 via-pink-100 to-purple-200'>
+      {/* Header mobile sticky - Visible uniquement sur mobile */}
+      <div className='md:hidden sticky top-0 z-50 bg-gradient-to-r from-purple-400 via-pink-400 to-orange-400 shadow-lg'>
+        <div className='flex items-center justify-between px-4 py-3'>
+          <Link href='/' className='flex items-center gap-2 hover:opacity-80 transition-opacity active:scale-95'>
+            <span className='text-2xl'>🏠</span>
+            <h1 className='text-lg font-black text-white'>Dashboard</h1>
+          </Link>
+
+          <button
+            onClick={handleCreateMonster}
+            className='flex items-center gap-1 bg-yellow-400 text-yellow-900 font-black px-3 py-2 rounded-xl shadow-md hover:bg-yellow-300 transition-all duration-300 active:scale-95'
+          >
+            <span className='text-lg'>➕</span>
+          </button>
+        </div>
+      </div>
+
       {/* Bulles décoratives de fond plus colorées */}
       <div className='pointer-events-none absolute -right-32 top-24 h-96 w-96 rounded-full bg-gradient-to-br from-yellow-300/40 to-orange-400/40 blur-3xl animate-float' aria-hidden='true' />
       <div className='pointer-events-none absolute -left-32 bottom-24 h-96 w-96 rounded-full bg-gradient-to-br from-pink-300/40 to-purple-400/40 blur-3xl animate-float-delayed' aria-hidden='true' />
       <div className='pointer-events-none absolute top-1/2 left-1/2 h-80 w-80 rounded-full bg-gradient-to-br from-blue-300/30 to-indigo-400/30 blur-3xl animate-pulse-slow' aria-hidden='true' />
 
-      {/* Étoiles décoratives */}
-      <div className='pointer-events-none absolute top-20 right-40 text-6xl animate-twinkle'>⭐</div>
-      <div className='pointer-events-none absolute top-40 left-20 text-5xl animate-twinkle-delayed'>✨</div>
-      <div className='pointer-events-none absolute bottom-40 right-60 text-4xl animate-twinkle'>💫</div>
+      {/* Étoiles décoratives - Cachées sur mobile pour éviter débordement */}
+      <div className='pointer-events-none absolute top-20 right-40 text-6xl animate-twinkle hidden sm:block'>⭐</div>
+      <div className='pointer-events-none absolute top-40 left-20 text-5xl animate-twinkle-delayed hidden sm:block'>✨</div>
+      <div className='pointer-events-none absolute bottom-40 right-60 text-4xl animate-twinkle hidden sm:block'>💫</div>
 
-      <main className='relative z-10 mx-auto w-full max-w-7xl px-4 pb-24 pt-8 sm:px-6 lg:px-8'>
+      <main className='relative z-10 mx-auto w-full max-w-7xl px-4 pb-24 pt-4 sm:pt-8 sm:px-6 lg:px-8'>
         {/* Section héro avec bienvenue - EN HAUT */}
         <section className='relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-white/95 via-purple-50/90 to-pink-50/90 px-8 py-10 shadow-2xl ring-4 ring-white/80 backdrop-blur-lg mb-12'>
           {/* Bulles décoratives internes */}

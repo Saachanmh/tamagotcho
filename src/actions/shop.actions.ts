@@ -87,3 +87,34 @@ export async function buyAccessory (creatureId: string, itemId: string): Promise
   revalidatePath('/wallet')
 }
 
+/**
+ * Action serveur pour acheter un arrière-plan :
+ * - Vérifie la session
+ * - Vérifie l'existence du monstre
+ * - Vérifie le background dans le catalogue
+ * - Débite les Koins de l'utilisateur (via subtractKoins)
+ * - Revalide les routes concernées
+ */
+export async function buyBackgroundAction (creatureId: string, itemId: string): Promise<void> {
+  console.log(`Achat du background ${itemId} pour la créature ${creatureId}`)
+  const session = await auth.api.getSession({ headers: await headers() })
+  if (!session) throw new Error('User not authenticated')
+  const { user } = session
+
+  await connectMongooseToDatabase()
+
+  const monster = await Monster.findOne({ _id: creatureId, ownerId: user.id })
+  if (!monster) throw new Error('Monster not found')
+
+  const { BACKGROUND_CATALOG } = await import('@/services/shop')
+  const item = BACKGROUND_CATALOG.find((i) => i.id === itemId)
+  if (!item) throw new Error('Background not found')
+
+  // Débit des Koins : si solde insuffisant, subtractKoins lancera une erreur
+  await subtractKoins(item.price)
+
+  // Pas d'enregistrement serveur de backgrounds (gestion côté client/localStorage)
+  // On revalide les chemins pour rafraîchir le wallet et la page créature
+  revalidatePath(`/creature/${creatureId}`)
+  revalidatePath('/wallet')
+}

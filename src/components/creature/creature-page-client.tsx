@@ -230,22 +230,69 @@ export function CreaturePageClient ({ monster }: CreaturePageClientProps): React
   }
 
   return (
-    <div className='min-h-screen bg-gradient-to-br from-yellow-100 via-pink-100 to-purple-200 py-6 relative overflow-hidden'>
-      {/* Bulles décoratives animées */}
-      <div className='pointer-events-none absolute inset-0'>
-        <div className='absolute -right-32 top-20 h-96 w-96 rounded-full bg-gradient-to-br from-yellow-300/30 to-orange-400/30 blur-3xl animate-float' />
-        <div className='absolute -left-32 bottom-20 h-96 w-96 rounded-full bg-gradient-to-br from-pink-300/30 to-purple-400/30 blur-3xl animate-float-delayed' />
-        <div className='absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 h-80 w-80 rounded-full bg-gradient-to-br from-blue-300/20 to-indigo-400/20 blur-3xl animate-pulse-slow' />
+    <div className='min-h-screen bg-gradient-to-br from-yellow-100 via-pink-100 to-purple-200 relative pb-20 md:pb-0'>
+      {/* Header mobile sticky - Toujours visible sur mobile */}
+      <div className='md:hidden sticky top-0 z-50 bg-gradient-to-r from-purple-400 via-pink-400 to-orange-400 shadow-lg'>
+        {/* Première ligne : Navigation et nom */}
+        <div className='flex items-center justify-between px-3 py-2.5 gap-2 border-b border-white/20'>
+          <button
+            onClick={() => { void router.push('/app') }}
+            className='flex items-center gap-1.5 bg-white/90 backdrop-blur-sm text-purple-700 font-black px-3 py-1.5 rounded-lg shadow-md hover:bg-white transition-all duration-300 active:scale-95 text-sm'
+          >
+            <span className='text-base'>←</span>
+            <span className='text-xs'>Retour</span>
+          </button>
+
+          <h1 className='text-sm font-black text-white truncate max-w-[120px] text-center flex-1'>
+            {currentMonster.name}
+          </h1>
+
+          <button
+            onClick={() => { void togglePublic() }}
+            disabled={isUpdatingVisibility}
+            className={`flex items-center px-2 py-1.5 rounded-lg shadow-md font-bold text-xs transition-all duration-300 active:scale-95 ${currentMonster.isPublic ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-700'}`}
+          >
+            <span className='text-base'>{currentMonster.isPublic ? '🌐' : '🔒'}</span>
+          </button>
+        </div>
+
+        {/* Deuxième ligne : Boutons d'action */}
+        <div className='flex items-center justify-around px-3 py-2 gap-2'>
+          <button
+            onClick={() => { setShowWardrobe(true) }}
+            className='flex flex-col items-center gap-0.5 bg-indigo-500 text-white font-bold px-3 py-1.5 rounded-lg shadow-md hover:bg-indigo-600 transition-all duration-300 active:scale-95 flex-1'
+          >
+            <span className='text-lg'>👔</span>
+            <span className='text-[10px] uppercase'>Placard</span>
+          </button>
+
+          <button
+            onClick={() => { setShowShop(true) }}
+            className='flex flex-col items-center gap-0.5 bg-green-500 text-white font-bold px-3 py-1.5 rounded-lg shadow-md hover:bg-green-600 transition-all duration-300 active:scale-95 flex-1'
+          >
+            <span className='text-lg'>🛍️</span>
+            <span className='text-[10px] uppercase'>Boutique</span>
+          </button>
+        </div>
       </div>
 
-      {/* Étoiles décoratives */}
-      <div className='pointer-events-none absolute top-20 right-40 text-6xl animate-twinkle'>⭐</div>
-      <div className='pointer-events-none absolute top-40 left-20 text-5xl animate-twinkle-delayed'>✨</div>
-      <div className='pointer-events-none absolute bottom-40 right-60 text-4xl animate-twinkle'>💫</div>
+      {/* Contenu de la page avec padding top sur mobile pour compenser le header sticky */}
+      <div className='py-4 sm:py-6'>
+        {/* Bulles décoratives animées - Taille réduite sur mobile */}
+        <div className='pointer-events-none absolute inset-0'>
+          <div className='absolute -right-16 sm:-right-32 top-20 h-48 w-48 sm:h-96 sm:w-96 rounded-full bg-gradient-to-br from-yellow-300/30 to-orange-400/30 blur-3xl animate-float' />
+          <div className='absolute -left-16 sm:-left-32 bottom-20 h-48 w-48 sm:h-96 sm:w-96 rounded-full bg-gradient-to-br from-pink-300/30 to-purple-400/30 blur-3xl animate-float-delayed' />
+          <div className='absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 h-60 w-60 sm:h-80 sm:w-80 rounded-full bg-gradient-to-br from-blue-300/20 to-indigo-400/20 blur-3xl animate-pulse-slow' />
+        </div>
 
-      <div className='container relative z-10 mx-auto px-4 max-w-7xl'>
-        {/* Barre de navigation - Plus compacte */}
-        <div className='flex justify-between items-center mb-6 gap-4'>
+        {/* Étoiles décoratives - Cachées sur mobile */}
+        <div className='pointer-events-none absolute top-20 right-40 text-6xl animate-twinkle hidden lg:block'>⭐</div>
+        <div className='pointer-events-none absolute top-40 left-20 text-5xl animate-twinkle-delayed hidden lg:block'>✨</div>
+        <div className='pointer-events-none absolute bottom-40 right-60 text-4xl animate-twinkle hidden lg:block'>💫</div>
+
+        <div className='container relative z-10 mx-auto px-4 max-w-7xl'>
+        {/* Barre de navigation desktop - Cachée sur mobile car on a le header sticky */}
+        <div className='hidden md:flex justify-between items-center mb-6 gap-4'>
           {/* Bouton retour + nom */}
           <div className='flex items-center gap-4'>
             <button
@@ -298,8 +345,8 @@ export function CreaturePageClient ({ monster }: CreaturePageClientProps): React
           </div>
         </div>
 
-        {/* Grille principale - Alignée */}
-        <div className='grid lg:grid-cols-2 gap-6 items-start'>
+        {/* Grille principale - Responsive amélioré */}
+        <div className='grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 items-start'>
           {/* Colonne gauche : Monstre animé + Actions */}
           <div className='space-y-6'>
             <CreatureMonsterDisplay
@@ -326,6 +373,9 @@ export function CreaturePageClient ({ monster }: CreaturePageClientProps): React
             />
           </div>
         </div>
+      </div>
+
+      {/* Fermeture de la div wrapper py-6 */}
       </div>
 
       {/* Animation de level-up */}

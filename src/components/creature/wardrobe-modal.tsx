@@ -125,17 +125,18 @@ export function WardrobeModal ({
       className='fixed inset-0 z-50 bg-black/60 backdrop-blur-md animate-fade-in'
       onClick={handleBackdropClick}
     >
-      <div className='fixed inset-0 z-[70] flex items-start md:items-center justify-center p-4 overflow-y-auto'>
-        <div className='relative max-w-6xl w-full animate-scale-in max-h-[calc(100vh-4rem)] overflow-auto'>
-          <div className='bg-gradient-to-br from-indigo-50 to-purple-50 rounded-3xl shadow-2xl p-8 relative overflow-visible'>
+      <div className='fixed inset-0 z-50 flex items-start md:items-center justify-center p-4 overflow-y-auto'>
+        <div className='relative max-w-6xl w-full animate-scale-in max-h-[calc(100vh-4rem)] overflow-auto' onClick={(e) => e.stopPropagation()}>
+          <div className='bg-gradient-to-br from-indigo-50 to-purple-50 rounded-3xl shadow-2xl p-8 relative'>
             {/* Decorations */}
-            <div className='absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-indigo-300/20 to-purple-400/20 rounded-full blur-3xl' />
-            <div className='absolute bottom-0 left-0 w-40 h-40 bg-gradient-to-br from-pink-300/20 to-indigo-400/20 rounded-full blur-3xl' />
+            <div className='absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-indigo-300/20 to-purple-400/20 rounded-full blur-3xl pointer-events-none' />
+            <div className='absolute bottom-0 left-0 w-40 h-40 bg-gradient-to-br from-pink-300/20 to-indigo-400/20 rounded-full blur-3xl pointer-events-none' />
 
             {/* Close Button */}
             <button
               onClick={onClose}
-              className='absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-gradient-to-br from-red-400 to-pink-500 text-white font-bold text-xl hover:from-red-500 hover:to-pink-600 transition-all duration-300 shadow-lg hover:scale-110 active:scale-95'
+              type="button"
+              className='absolute top-4 right-4 z-50 w-10 h-10 rounded-full bg-gradient-to-br from-red-400 to-pink-500 text-white font-bold text-xl hover:from-red-500 hover:to-pink-600 transition-all duration-300 shadow-lg hover:scale-110 active:scale-95 cursor-pointer'
               aria-label='Fermer'
             >
               ✕
